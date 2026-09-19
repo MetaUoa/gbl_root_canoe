@@ -47,6 +47,10 @@ jobs:
           python -m py_compile tools/pjz110_1500702_patch.py
           python -m py_compile tools/pjz110_fake_lock.py
           python -m py_compile tools/pjz110_fv_analyze.py
+      - name: Install LLVM linker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lld
       - name: Build read-only AArch64 EFI probe
         run: |
           mkdir -p /tmp/pjz110-probe
