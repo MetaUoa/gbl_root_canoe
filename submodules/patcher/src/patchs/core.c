@@ -165,8 +165,8 @@ static int32_t find_adrl_unlocked_to_locked(const char* buffer, int32_t size,
         if (!str_at(buffer, size, key, "androidboot.vbmeta.device_state")) continue;
 
         uint8_t state_reg = 0, csel_rd = 0, csel_rn = 0, csel_rm = 0;
-        if (!is_cmp_w_imm_zero(read_instr(buffer, i + 28), &state_reg)) continue;
-        if (!is_csel_x_eq(read_instr(buffer, i + 32), &csel_rd, &csel_rn, &csel_rm)) continue;
+        if (!is_cmp_w_imm_zero(decode_at((char*)buffer, i + 28).raw, &state_reg)) continue;
+        if (!is_csel_x_eq(decode_at((char*)buffer, i + 32).raw, &csel_rd, &csel_rn, &csel_rm)) continue;
         if (csel_rn != b0.rt || csel_rm != a0.rt) continue;
 
         printf("Found semantic device-state selector at 0x%X:\n", i);
