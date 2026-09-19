@@ -401,3 +401,263 @@ Do not:
 - use provisioning/RPMB utilities.
 
 The purpose is to locate an already-present stock Retail execution path, not to weaken platform security state.
+
+
+# 11. Exact current XBL configuration
+
+The current active `xbl_config.img` has SHA256:
+
+~~~text
+9760062003776a481495286d6c0233bda307100ac2e95cb7b23fcb5aa17bf64d
+~~~
+
+Its Pakala platform DTB is at file offset `0x8708`. The live `/sw/uefi` configuration contains:
+
+~~~text
+EnableShell                         = 1
+SecurityFlag                        = 0xC4
+DetectRetailUserAttentionHotkey     = 0
+DetectRetailUserAttentionHotkeyCode = 0x17
+EnableUefiSecAppDebugLogDump        = 0
+AllowNonPersistentVarsInRetail      = 1
+EnableDisplayImageFv                = 0
+EnableVariablePolicyEngine          = 0
+
+PlatConfigFileName = uefiplatLA.cfg
+OsTypeString       = LA
+DefaultChargerApp  = QcomChargerApp
+DefaultBDSBootApp  = LinuxLoader
+~~~
+
+No `OEMSetupApp` property is present in the active current DT configuration.
+
+Consequences:
+
+- `AllowNonPersistentVarsInRetail=1` exactly explains the runtime log `UEFI NV tables are enabled as VOLATILE!` without shutdown.
+- `EnableShell=1` does not make the Retail shell reachable: the exact BDS logic forces `EnableShellFlag=0` when `RETAIL=TRUE`.
+- `OEMSetupApp` is not configured on this current build, so the otherwise Retail-capable OEMSetupApp route is not usable here.
+- `DetectRetailUserAttentionHotkey=0` disables that separate platform feature. It does **not** remove the exact QcomBds `SCAN_DOWN` removable-media check, which is present and unconditionally called by the current BDS initialization path.
+
+Therefore R2 (OEMSetupApp) is closed on the exact current build and R3 remains the primary candidate.
+
+# 12. Exact current removable boot call path
+
+The exact current QcomBds establishes the following path.
+
+`BootOptionStart` at approximately `RVA 0x24FC` directly calls:
+
+~~~text
+BdsStartEfiApplication
+RVA ~0xCC44
+~~~
+
+There is no call to `PlatformBdsPreLoadBootOption()` in this direct current path.
+
+Inside the exact current `BdsStartEfiApplication`:
+
+~~~text
+gBS->LoadImage(
+    BootPolicy = TRUE,
+    ParentImageHandle,
+    DevicePath,
+    ...
+)
+~~~
+
+is called at approximately `RVA 0xCCF4`.
+
+If the initial device path is not directly loadable, the function obtains the bootable handle and falls back to the standard AArch64 removable path:
+
+~~~text
+\EFI\BOOT\BOOTAA64.EFI
+~~~
+
+The exact current QcomBds contains this UTF-16 path at `RVA 0x1398A`.
+
+After a successful load it calls:
+
+~~~text
+gBS->StartImage(...)
+~~~
+
+at approximately `RVA 0xCE7C`.
+
+Therefore the previously suspected volatile-table `PlatformBdsPreLoadBootOption` policy is **not an active blocker in this exact current QcomBds call path**.
+
+The remaining policy gate is DxeCore/Security2 during `LoadImage`.
+
+# 13. Exact current Security2 analysis
+
+The current `SecurityStubDxe.efi` is:
+
+~~~text
+SHA256:
+2e029953a561cb00133b67c415829567b67defb5dcaf99cef2519589927a3b7e
+
+SizeOfImage:
+0xD000
+~~~
+
+Its exact `Security2StubAuthenticate` is at approximately `RVA 0x1474`.
+
+The function first calls the exact current third-party defer routine at approximately `RVA 0x198C`, then tail-calls exact `ExecuteSecurity2Handlers` at approximately `RVA 0x6F78` with operation mask `0x0F`:
+
+~~~text
+VERIFY_IMAGE |
+DEFER_IMAGE_LOAD |
+MEASURE_IMAGE |
+CONNECT_POLICY
+~~~
+
+## 13.1 EndOfDxe behavior
+
+The exact current SecurityStub uses byte `RVA 0xB2AC` as its EndOfDxe state.
+
+- initialized value in the image: `0`
+- callback at approximately `RVA 0x18C0` stores `1`
+- defer routine at approximately `RVA 0x1A10` reads it
+
+When this byte is set, the exact defer path returns `EFI_SUCCESS` for a non-FV image and marks it as loaded-after-EndOfDxe.
+
+Before EndOfDxe, a new external image is queued/deferred and returns `EFI_ACCESS_DENIED`.
+
+The exact QcomBds initialization invokes the platform post-firmware-config-security method **before** the `QcomBdsDetectBootHotKey` call at `RVA 0x1E80`. The same-version semantic source identifies that method as the point that signals `gEfiEndOfDxeEventGroupGuid`.
+
+Therefore the Vol-/removable path occurs on the **post-EndOfDxe side** of SecurityStub's defer policy.
+
+## 13.2 No registered Security2 verification handler
+
+The exact current SecurityStub's Security2 handler state is located at:
+
+~~~text
+mNumberOfSecurity2Handler  -> RVA 0xB358
+mSecurity2Table            -> RVA 0xB360
+~~~
+
+Both are zero in the shipped PE image.
+
+More importantly, exhaustive disassembly references show:
+
+~~~text
+RVA 0xB358:
+  read at 0x6FC4
+  read at 0x7024
+  no write reference
+
+RVA 0xB360:
+  read at 0x6FD8
+  no write reference
+~~~
+
+Those reads are inside `ExecuteSecurity2Handlers`.
+
+No linked function in the exact current SecurityStub writes the handler count/table. If the count is zero, the exact `ExecuteSecurity2Handlers` branch at `0x6FC8` returns success immediately.
+
+The PE has no import/export mechanism by which another independent DXE image can directly mutate these module-local globals.
+
+The current nested UEFI firmware contains the Security2 architectural protocol GUID only in:
+
+1. current `DxeCore`, which consumes the protocol;
+2. current `SecurityStubDxe`, which produces the protocol.
+
+No other current nested module contains that protocol GUID.
+
+The same-version Pakala DSC also includes SecurityStubDxe, SecRSADxe, ASN1X509Dxe and VerifiedBootDxe, but does **not** link `DxeImageVerificationLib` into SecurityStubDxe.
+
+This matches the exact binary evidence: standard `DxeImageVerificationLib` diagnostic strings and SecureBoot/db/dbx verification policy strings are absent from the current SecurityStub.
+
+**Conclusion:** the exact current SecurityStub has no registered `VERIFY_IMAGE` Security2 handler.
+
+# 14. Exact DxeCore LoadImage security path
+
+The current extracted `DxeCore.efi` is:
+
+~~~text
+SHA256:
+c50728527212502367bfc39d5b7f0f7ccdb0db217edbb7b87505841a33d4e19f
+
+SizeOfImage:
+0x2F000
+~~~
+
+Its exact LoadImage implementation matches the standard EDK2 structure.
+
+At approximately `RVA 0x6568`, the current binary obtains the installed Security2 interface and indirectly calls its first method, `FileAuthentication`.
+
+For a non-FV removable image:
+
+~~~text
+DxeCore LoadImage
+   ->
+Security2->FileAuthentication
+   ->
+current SecurityStub Security2StubAuthenticate
+   ->
+Defer3rdPartyImageLoad
+      post-EndOfDxe => SUCCESS
+   ->
+ExecuteSecurity2Handlers
+      handler count == 0 => SUCCESS
+   ->
+CoreLoadPeImage
+   ->
+StartImage
+~~~
+
+The additional legacy Security Architectural Protocol check in the exact DxeCore is conditional on `ImageIsFromFv`; it does not form a second authentication check for the removable FAT file path.
+
+No separate Qualcomm/OPlus PE-authentication call is visible in this exact DxeCore LoadImage path.
+
+# 15. VerifiedBootDxe and OplusSecurityDxe are not the PE-auth gate
+
+The exact current `VerifiedBootDxe.efi` contains:
+
+~~~text
+VB: DeviceInit: Device is unlocked! Skipping verification!
+~~~
+
+but the current binary does **not** contain the Security2 architectural protocol GUID.
+
+The exact current `OplusSecurityDxe.efi` likewise does not contain the Security2 protocol GUID. Its observed logic reads VerifiedBoot device state and publishes OPlus/OEM lifecycle state; no Security2 handler registration path was identified.
+
+Thus the VerifiedBoot unlocked shortcut should be treated as Android Verified Boot state handling, not as the reason removable EFI is accepted.
+
+The removable-EFI conclusion instead follows from the exact SecurityStub/DxeCore path above.
+
+# 16. Updated R3 conclusion
+
+For the exact current `PJZ110_16.0.10.501(CN01)` firmware, the offline evidence now supports:
+
+~~~text
+Vol- / SCAN_DOWN
+       ->
+QcomBds BootFromRemovableMedia
+       ->
+enumerate removable FAT media
+       ->
+\EFI\BOOT\BOOTAA64.EFI
+       ->
+DxeCore LoadImage(BootPolicy=TRUE)
+       ->
+SecurityStub Security2
+       ->
+post-EndOfDxe defer: PASS
+       ->
+Security2 registered verify handlers: 0
+       ->
+PE structural load
+       ->
+StartImage
+~~~
+
+Remaining uncertainties are now hardware/runtime rather than a discovered firmware-policy denial:
+
+1. whether the phone's USB-C port enters host mode early enough for a removable FAT device;
+2. whether a specific FAT32 medium is enumerated by the stock USB mass-storage stack;
+3. whether the external AArch64 PE itself is valid for this UEFI execution environment.
+
+No partition modification is required to test these conditions.
+
+**Offline R3 status: PASS-CANDIDATE.**
+
+The next safe artifact should be a minimal read-only AArch64 `BOOTAA64.EFI` probe before using either original or fake-locked LinuxLoader.
