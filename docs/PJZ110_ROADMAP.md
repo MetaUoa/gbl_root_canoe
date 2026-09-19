@@ -16,12 +16,14 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [ ] M9 — Identify the SM8750 GBL/EFISP loading path
 - [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
 - [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
-- [ ] M12 — Complete Retail removable-media pre-load + Security2 policy RE, then validate only the surviving non-flashing EFI route
+- [ ] M12 — True-device validate the surviving Vol- -> removable FAT32 -> BOOTAA64.EFI path with the read-only probe
 - [ ] M13 — True-device ABL fake-lock validation: bootconfig locked/green while real BL stays unlocked
 - [ ] M14 — OTA/profile lifecycle and regression fixtures
 - [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
 - [x] M16 — Analyze current imagefv/toolsfv/uefi and identify stock BDS -> ToolsFV -> Shell candidate
 - [x] M17 — Reverse exact Retail QcomBds entry paths; generic Shell route demoted, Vol- removable-media route confirmed
+- [x] M18 — Close exact Retail Security2/DxeCore policy RE; removable EFI path reaches LoadImage with zero registered Security2 verify handlers
+- [x] M19 — Build deterministic read-only AArch64 BOOTAA64.EFI probe for future non-flashing validation
 
 ## Current hard blocker
 
