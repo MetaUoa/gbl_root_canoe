@@ -12,6 +12,7 @@ on:
       - 'tools/pjz110_collect_bootchain.ps1'
       - 'tools/pjz110_capture_validation.ps1'
       - 'tools/pjz110_fv_analyze.py'
+      - 'tools/pjz110_probe/**'
       - 'profiles/PJZ110_16.0.10.501.json'
       - 'profiles/PJZ110_16.0.3.501.json'
       - 'profiles/PJZ110_15.0.0.702.json'
@@ -46,6 +47,32 @@ jobs:
           python -m py_compile tools/pjz110_1500702_patch.py
           python -m py_compile tools/pjz110_fake_lock.py
           python -m py_compile tools/pjz110_fv_analyze.py
+      - name: Build read-only AArch64 EFI probe
+        run: |
+          mkdir -p /tmp/pjz110-probe
+          clang --target=aarch64-pc-windows-msvc -ffreestanding -fshort-wchar -fno-stack-protector -fno-builtin -O1 \
+            -c tools/pjz110_probe/pjz110_probe.c -o /tmp/pjz110-probe/probe.obj
+          if command -v lld-link >/dev/null 2>&1; then
+            lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /machine:arm64 \
+              /base:0x100000 /timestamp:0 /out:/tmp/pjz110-probe/BOOTAA64.EFI /tmp/pjz110-probe/probe.obj
+          else
+            ld.lld -flavor link /subsystem:efi_application /entry:efi_main /nodefaultlib /machine:arm64 \
+              /base:0x100000 /timestamp:0 /out:/tmp/pjz110-probe/BOOTAA64.EFI /tmp/pjz110-probe/probe.obj
+          fi
+          python - <<'PY'
+          from pathlib import Path
+          import struct
+          b=Path('/tmp/pjz110-probe/BOOTAA64.EFI').read_bytes()
+          assert b[:2] == b'MZ'
+          pe=struct.unpack_from('<I',b,0x3c)[0]
+          assert b[pe:pe+4] == b'PE\0\0'
+          assert struct.unpack_from('<H',b,pe+4)[0] == 0xAA64
+          opt=pe+24
+          assert struct.unpack_from('<H',b,opt+0x44)[0] == 10
+          rr,rs=struct.unpack_from('<II',b,opt+0x70+5*8)
+          assert rr != 0 and rs != 0
+          print('probe PE validation: PASS')
+          PY
       - name: Installer shell syntax check
         run: bash -n targets/magisk_module/module/customize.sh
       - name: PJZ110 fail-closed guard check
