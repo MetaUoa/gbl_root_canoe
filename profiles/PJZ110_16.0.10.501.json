@@ -1,0 +1,36 @@
+{
+  "id": "pjz110-16.0.10.501-cn01",
+  "device": "OnePlus 13",
+  "model": "PJZ110",
+  "platform": "SM8750",
+  "soc_codename": "Pakala",
+  "build": "PJZ110_16.0.10.501(CN01)",
+  "abl_sha256": "c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed",
+  "linuxloader_sha256": "4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b",
+  "linuxloader_size": 798720,
+  "patches": {
+    "androidboot.vbmeta.device_state": {
+      "status": "implemented",
+      "unlocked_adrp": "0x4af3c",
+      "unlocked_add": "0x4af40",
+      "locked_adrp": "0x4af44",
+      "locked_add": "0x4af48"
+    },
+    "androidboot.verifiedbootstate": {
+      "status": "implemented",
+      "state_table": "0xa2c90",
+      "orange_pointer": "0xa2ca8",
+      "green_string": "0x86015"
+    },
+    "oplus_unlock_warning": {
+      "status": "research"
+    },
+    "gbl_efisp_chain": {
+      "status": "unknown",
+      "legacy_utf16_efisp_present": false
+    },
+    "tee_keymaster_root_of_trust": {
+      "status": "intentionally_not_modified"
+    }
+  }
+}
