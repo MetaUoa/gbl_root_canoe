@@ -14,13 +14,15 @@
       "unlocked_adrp": "0x4af3c",
       "unlocked_add": "0x4af40",
       "locked_adrp": "0x4af44",
-      "locked_add": "0x4af48"
+      "locked_add": "0x4af48",
+      "locator": "semantic ADRP+ADD triple + CMP/CSEL"
     },
     "androidboot.verifiedbootstate": {
       "status": "implemented",
       "state_table": "0xa2c90",
       "orange_pointer": "0xa2ca8",
-      "green_string": "0x86015"
+      "green_string": "0x86015",
+      "locator": "semantic enum/string table 0:green 1:orange 2:yellow 3:red"
     },
     "oplus_unlock_warning": {
       "status": "research"
@@ -32,5 +34,7 @@
     "tee_keymaster_root_of_trust": {
       "status": "intentionally_not_modified"
     }
-  }
+  },
+  "patched_linuxloader_sha256": "34dbedd47b33acf4c131b5db927a5ef7cf9be214facbe6f98fe044dc448b61f0",
+  "changed_byte_count": 7
 }
