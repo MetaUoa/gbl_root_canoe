@@ -122,6 +122,24 @@ _model=$(getprop ro.product.model 2>/dev/null)
 _name=$(getprop ro.product.name 2>/dev/null)
 _inc=$(getprop ro.build.version.incremental 2>/dev/null)
 ui_print "$T_DEVICE_OK $_model / $_name / $_inc"
+
+# PJZ110 / SM8750 is currently an offline research profile only.
+# The 16.0.10.501 LinuxLoader fake-lock patches are validated offline, but the
+# GBL/EFISP loading path has not been verified on this platform. Fail closed
+# before any partition write or legacy ABL downgrade logic can run.
+if [ "$_model" = "PJZ110" ] || [ "$_name" = "PJZ110" ]; then
+  if [ "$LANG" = "zh" ]; then
+    ui_print "- 检测到 OnePlus 13 国行 PJZ110 / SM8750"
+    ui_print "- 当前 pjz110-sm8750 分支仅支持离线分析与生成 patched.efi"
+    ui_print "- GBL/EFISP 启动链尚未验证，已禁止刷写 efisp / abl 与自动降级"
+  else
+    ui_print "- Detected OnePlus 13 China PJZ110 / SM8750"
+    ui_print "- The pjz110-sm8750 branch is offline-analysis/patch-output only"
+    ui_print "- GBL/EFISP is unverified; efisp/abl writes and ABL downgrade are disabled"
+  fi
+  abort "PJZ110 fail-closed research profile: device flashing disabled"
+fi
+
 ui_print "$T_PERM"
 
 set_perm_recursive "$MODPATH/bin" 0 0 0755 0755
