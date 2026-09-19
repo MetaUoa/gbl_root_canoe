@@ -19,17 +19,23 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [ ] M12 — Validate chainloader without fake-lock modifications
 - [ ] M13 — Enable controlled device testing only after GBL/EFISP validation
 - [ ] M14 — OTA/profile lifecycle and regression fixtures
+- [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
 
 ## Current hard blocker
 
-The profiled `PJZ110_16.0.10.501(CN01)` LinuxLoader contains neither ASCII nor UTF-16 `efisp`, while the legacy upstream GBL patch depends on that marker.
+Three real PJZ110 boot-chain baselines have now been analyzed:
 
-The next useful firmware input is therefore an early **ARB1** OnePlus 13 China build:
+- `PJZ110_15.0.0.702(CN01)`
+- `PJZ110_16.0.3.501(CN01)`
+- `PJZ110_16.0.10.501(CN01)`
 
-1. `PJZ110_16.0.3.501(CN01)`
-2. `PJZ110_16.0.3.502(CN01)`
+All three support the offline software-visible fake-lock patch, but **all three lack the legacy ASCII/UTF-16 `efisp` marker** used by the original direct EFISP loader patch.
 
-Priority input: `abl.img`. `xbl.img` and `xbl_config.img` are useful for boot-chain version comparison but are not required for the first ABL diff.
+The ColorOS 15 sample is especially important because its XBL is a genuinely older Pakala generation (`BOOT.MXF.2.5.1-00040.1-PAKALA-1.81269.25`), while the sampled ColorOS 16 builds use `00265`. Crossing this XBL generation boundary still did not reveal the legacy loader marker.
+
+Therefore M9 remains open, but its research question has changed: instead of searching another nearby OTA for the same marker, investigate an alternative PJZ110 chainload/deployment path or determine that PJZ110 never shipped the direct loader used by the original SM8845/SM8850 exploit.
+
+See `docs/PJZ110_THREE_GEN_DIFF.md`.
 
 ## Safety contract
 
