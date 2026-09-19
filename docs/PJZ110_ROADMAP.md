@@ -16,10 +16,11 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [ ] M9 — Identify the SM8750 GBL/EFISP loading path
 - [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
 - [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
-- [ ] M12 — Validate a temporary/non-flashing stock execution path for original LinuxLoader
+- [ ] M12 — True-device validation of stock BDS -> ToolsFV -> Shell reachability and external EFI policy
 - [ ] M13 — True-device ABL fake-lock validation: bootconfig locked/green while real BL stays unlocked
 - [ ] M14 — OTA/profile lifecycle and regression fixtures
 - [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
+- [x] M16 — Analyze current imagefv/toolsfv/uefi and identify stock BDS -> ToolsFV -> Shell candidate
 
 ## Current hard blocker
 
@@ -36,6 +37,8 @@ The ColorOS 15 sample is especially important because its XBL is a genuinely old
 Therefore M9 remains open, but its research question has changed: instead of searching another nearby OTA for the same marker, investigate an alternative PJZ110 chainload/deployment path or determine that PJZ110 never shipped the direct loader used by the original SM8845/SM8850 exploit.
 
 See `docs/PJZ110_THREE_GEN_DIFF.md`.
+
+Current-device firmware-volume analysis: `docs/PJZ110_FV_ANALYSIS_16010501.md`.
 
 ## Safety contract
 
