@@ -16,11 +16,12 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [ ] M9 — Identify the SM8750 GBL/EFISP loading path
 - [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
 - [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
-- [ ] M12 — True-device validation of stock BDS -> ToolsFV -> Shell reachability and external EFI policy
+- [ ] M12 — Complete Retail removable-media pre-load + Security2 policy RE, then validate only the surviving non-flashing EFI route
 - [ ] M13 — True-device ABL fake-lock validation: bootconfig locked/green while real BL stays unlocked
 - [ ] M14 — OTA/profile lifecycle and regression fixtures
 - [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
 - [x] M16 — Analyze current imagefv/toolsfv/uefi and identify stock BDS -> ToolsFV -> Shell candidate
+- [x] M17 — Reverse exact Retail QcomBds entry paths; generic Shell route demoted, Vol- removable-media route confirmed
 
 ## Current hard blocker
 
@@ -88,3 +89,5 @@ Final acceptance is defined in `docs/PJZ110_ABL_FAKE_LOCK_VALIDATION.md`.
 The staged live-device procedure is documented in `docs/PJZ110_TRUE_DEVICE_VALIDATION_PLAN.md`.
 
 The first live session is intentionally limited to `T0 -> T1 -> T2`: baseline capture, real-unlock confirmation, and non-flashing stock BDS/ToolsFV Shell reachability. External EFI execution, original LinuxLoader chainload, and fake-locked LinuxLoader validation are gated behind the preceding stages.
+
+Retail QcomBds reverse-engineering report: `docs/PJZ110_RETAIL_QCOMBDS_RE.md`.
