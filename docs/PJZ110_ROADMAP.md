@@ -15,9 +15,9 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [ ] M8 — Rework OPlus unlock-warning suppression for PJZ110
 - [ ] M9 — Identify the SM8750 GBL/EFISP loading path
 - [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
-- [ ] M11 — Add exact-profile device-side read-only preflight
-- [ ] M12 — Validate chainloader without fake-lock modifications
-- [ ] M13 — Enable controlled device testing only after GBL/EFISP validation
+- [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
+- [ ] M12 — Validate a temporary/non-flashing stock execution path for original LinuxLoader
+- [ ] M13 — True-device ABL fake-lock validation: bootconfig locked/green while real BL stays unlocked
 - [ ] M14 — OTA/profile lifecycle and regression fixtures
 - [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
 
@@ -55,3 +55,26 @@ For the exact profiled `LinuxLoader.efi`:
 - source SHA256: `4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b`
 - patched SHA256: `34dbedd47b33acf4c131b5db927a5ef7cf9be214facbe6f98fe044dc448b61f0`
 - changed byte count: **7**
+
+## Canonical implementation
+
+The canonical offline implementation is now:
+
+```text
+tools/pjz110_fake_lock.py
+submodules/patcher/src/patchs/core.c
+```
+
+The three older per-build Python patchers are retained only as regression/reference implementations.
+
+Offline ABL fake-lock logic is complete for the three known exact profiles. The current deployment blocker is no longer the fake-lock transformation itself; it is finding a temporary/non-flashing stock PJZ110 EFI execution path for the generated patched LinuxLoader.
+
+Read-only deployment helpers:
+
+```text
+tools/pjz110_collect_bootchain.ps1
+tools/pjz110_fv_analyze.py
+tools/pjz110_capture_validation.ps1
+```
+
+Final acceptance is defined in `docs/PJZ110_ABL_FAKE_LOCK_VALIDATION.md`.
