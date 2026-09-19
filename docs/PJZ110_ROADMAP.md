@@ -14,7 +14,7 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M7 — Block PJZ110 device-side `abl` / `efisp` writes and legacy ABL downgrade
 - [ ] M8 — Rework OPlus unlock-warning suppression for PJZ110
 - [ ] M9 — Identify the SM8750 GBL/EFISP loading path
-- [ ] M10 — Compare an early ARB1 PJZ110 ABL against 16.0.10.501
+- [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
 - [ ] M11 — Add exact-profile device-side read-only preflight
 - [ ] M12 — Validate chainloader without fake-lock modifications
 - [ ] M13 — Enable controlled device testing only after GBL/EFISP validation
