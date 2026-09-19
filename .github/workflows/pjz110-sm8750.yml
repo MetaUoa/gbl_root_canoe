@@ -10,6 +10,7 @@ on:
       - 'tests/test_pjz110_patch.py'
       - 'docs/PJZ110_SM8750.md'
       - '.github/workflows/pjz110-sm8750.yml'
+      - 'targets/magisk_module/module/customize.sh'
 
 jobs:
   test:
@@ -21,5 +22,11 @@ jobs:
           python-version: '3.11'
       - name: Unit tests
         run: python -m unittest discover -s tests -p 'test_pjz110_patch.py' -v
-      - name: Syntax check
+      - name: Python syntax check
         run: python -m py_compile tools/pjz110_patch.py
+      - name: Installer shell syntax check
+        run: bash -n targets/magisk_module/module/customize.sh
+      - name: PJZ110 fail-closed guard check
+        run: |
+          grep -q 'PJZ110 fail-closed research profile: device flashing disabled' targets/magisk_module/module/customize.sh
+          grep -q 'efisp/abl writes and ABL downgrade are disabled' targets/magisk_module/module/customize.sh
