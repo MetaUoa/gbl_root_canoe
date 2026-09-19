@@ -1,5 +1,16 @@
 # PJZ110 ABL Fake-Lock — True-Device Validation Plan
 
+> [!IMPORTANT]
+> **Deployment stages T2-T5 in this document are superseded.**
+>
+> Exact current-binary Retail RE has shown that the generic BDS Menu / ToolsFV Shell route is not the active shipping path. The surviving stock Retail candidate is:
+>
+> `Vol- / SCAN_DOWN -> QcomBds removable-media boot -> \\EFI\\BOOT\\BOOTAA64.EFI`.
+>
+> Use **`docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md`** for all future live-device execution tests. The final ABL fake-lock acceptance criteria in this document remain valid.
+>
+> Offline rationale and exact-binary evidence are in **`docs/PJZ110_RETAIL_QCOMBDS_RE.md`**.
+
 Target: **OnePlus 13 China (PJZ110), SM8750/Pakala**
 
 Primary build: **PJZ110_16.0.10.501(CN01)**
@@ -764,16 +775,10 @@ Separate milestone; not required to prove ABL fake-lock itself.
 
 ## 19. Next user action
 
-Do not start with the patched LinuxLoader.
+No additional live-device action is required while offline RE is being finalized.
 
-The first live session should perform only:
+When live validation resumes, do **not** use the old T2/T3 Shell flow. Start with Gate R0/R1 in:
 
-~~~text
-T0 -> T1 -> T2
-~~~
+`docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md`
 
-The result needed from that session is simply:
-
-> Can this retail PJZ110 reach the stock Qcom BDS / ToolsFV Shell path without flashing anything?
-
-Only after that result should T3/T4 commands and the minimal diagnostic EFI probe be finalized.
+The first payload is the read-only `BOOTAA64.EFI` probe, not LinuxLoader.
