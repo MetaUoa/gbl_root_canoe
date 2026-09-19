@@ -9,6 +9,9 @@ on:
       - 'tools/pjz110_1603501_patch.py'
       - 'tools/pjz110_1500702_patch.py'
       - 'tools/pjz110_fake_lock.py'
+      - 'tools/pjz110_collect_bootchain.ps1'
+      - 'tools/pjz110_capture_validation.ps1'
+      - 'tools/pjz110_fv_analyze.py'
       - 'profiles/PJZ110_16.0.10.501.json'
       - 'profiles/PJZ110_16.0.3.501.json'
       - 'profiles/PJZ110_15.0.0.702.json'
@@ -16,6 +19,7 @@ on:
       - 'tests/test_pjz110_1603501_patch.py'
       - 'tests/test_pjz110_1500702_patch.py'
       - 'tests/test_pjz110_fake_lock.py'
+      - 'tests/test_pjz110_fv_analyze.py'
       - 'docs/PJZ110_SM8750.md'
       - '.github/workflows/pjz110-sm8750.yml'
       - 'targets/magisk_module/module/customize.sh'
@@ -34,12 +38,14 @@ jobs:
           python -m unittest discover -s tests -p 'test_pjz110_1603501_patch.py' -v
           python -m unittest discover -s tests -p 'test_pjz110_1500702_patch.py' -v
           python -m unittest discover -s tests -p 'test_pjz110_fake_lock.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_fv_analyze.py' -v
       - name: Python syntax check
         run: |
           python -m py_compile tools/pjz110_patch.py
           python -m py_compile tools/pjz110_1603501_patch.py
           python -m py_compile tools/pjz110_1500702_patch.py
           python -m py_compile tools/pjz110_fake_lock.py
+          python -m py_compile tools/pjz110_fv_analyze.py
       - name: Installer shell syntax check
         run: bash -n targets/magisk_module/module/customize.sh
       - name: PJZ110 fail-closed guard check
