@@ -13,6 +13,11 @@ on:
       - 'tools/pjz110_capture_validation.ps1'
       - 'tools/pjz110_fv_analyze.py'
       - 'tools/pjz110_probe/**'
+      - 'docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md'
+      - 'docs/PJZ110_RETAIL_QCOMBDS_RE.md'
+      - 'tests/test_pjz110_retail_path_check.py'
+      - 'profiles/PJZ110_16.0.10.501_retail_path.json'
+      - 'tools/pjz110_retail_path_check.py'
       - 'profiles/PJZ110_16.0.10.501.json'
       - 'profiles/PJZ110_16.0.3.501.json'
       - 'profiles/PJZ110_15.0.0.702.json'
@@ -47,6 +52,7 @@ jobs:
           python -m py_compile tools/pjz110_1500702_patch.py
           python -m py_compile tools/pjz110_fake_lock.py
           python -m py_compile tools/pjz110_fv_analyze.py
+          python -m py_compile tools/pjz110_retail_path_check.py
       - name: Install LLVM linker
         run: |
           sudo apt-get update
