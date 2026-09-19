@@ -1,0 +1,48 @@
+{
+  "id": "pjz110-16.0.3.501-cn01",
+  "device": "OnePlus 13",
+  "model": "PJZ110",
+  "platform": "SM8750",
+  "soc_codename": "Pakala",
+  "build": "PJZ110_16.0.3.501(CN01)",
+  "abl_sha256": "320615838af3094f56e90613172d8bf0a3ed8a81a9b4ea9663b92142508478ca",
+  "xbl_sha256": "95167b7bbed3005427905f9bcc1f1e56e2ba273f5a7166605fa47c6de211e158",
+  "xbl_config_sha256": "0ddc4b0d88290559ad7999154bbe24948b330c8170ded48fcd2ccde9f906ceed",
+  "linuxloader_sha256": "1873bdfd2654decba1ac50d2c0d1d3aa61423f11123f7301743be78da7f63333",
+  "linuxloader_size": 802816,
+  "patched_linuxloader_sha256": "ef6025146ba868832d704d4a62efc2cf4387e965e57f1ad7426b8186cfb57ce4",
+  "changed_byte_count": 7,
+  "observations": {
+    "qcom_xbl_version": "BOOT.MXF.2.5.1-00265-PAKALA-1.104700.25",
+    "legacy_utf16_efisp_present": false,
+    "legacy_ascii_efisp_present": false,
+    "old_only_strings": [
+      "LoadImageNoAuthWrapper",
+      "LoadBootImageNoAuth",
+      "LoadImageAndAuthVB1"
+    ],
+    "old_only_strings_interpretation": "candidate verified-boot implementation delta only; not sufficient evidence of a usable GBL/EFISP loader"
+  },
+  "patches": {
+    "androidboot.vbmeta.device_state": {
+      "status": "implemented_offline",
+      "unlocked_adrp": "0x4c38c",
+      "unlocked_add": "0x4c390",
+      "locked_adrp": "0x4c394",
+      "locked_add": "0x4c398"
+    },
+    "androidboot.verifiedbootstate": {
+      "status": "implemented_offline",
+      "state_table": "0xa3cb0",
+      "orange_pointer": "0xa3cc8",
+      "green_string": "0x87995"
+    },
+    "gbl_efisp_chain": {
+      "status": "not_validated",
+      "legacy_efisp_marker": false
+    },
+    "tee_keymaster_root_of_trust": {
+      "status": "intentionally_not_modified"
+    }
+  }
+}
