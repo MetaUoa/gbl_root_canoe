@@ -1,0 +1,25 @@
+name: PJZ110 SM8750 checks
+
+on:
+  push:
+    branches: [pjz110-sm8750]
+  pull_request:
+    paths:
+      - 'tools/pjz110_patch.py'
+      - 'profiles/PJZ110_16.0.10.501.json'
+      - 'tests/test_pjz110_patch.py'
+      - 'docs/PJZ110_SM8750.md'
+      - '.github/workflows/pjz110-sm8750.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit tests
+        run: python -m unittest discover -s tests -p 'test_pjz110_patch.py' -v
+      - name: Syntax check
+        run: python -m py_compile tools/pjz110_patch.py
