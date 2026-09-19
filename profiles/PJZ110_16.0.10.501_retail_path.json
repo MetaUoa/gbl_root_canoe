@@ -1,0 +1,117 @@
+{
+  "id": "pjz110-16.0.10.501-retail-path",
+  "device": "OnePlus 13",
+  "model": "PJZ110",
+  "platform": "SM8750",
+  "soc_codename": "Pakala",
+  "build": "PJZ110_16.0.10.501(CN01)",
+  "artifacts": {
+    "abl": {
+      "size": 278528,
+      "sha256": "c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed"
+    },
+    "uefi": {
+      "size": 5242880,
+      "sha256": "8d2670cb7790552c035bfa95896d561e7defb2414c8a6d538a3fdca2690879cc"
+    },
+    "toolsfv": {
+      "size": 1048576,
+      "sha256": "c5da520b05b736875170248d2c80e5060edfb435c1e394acfb5489c5fef12eb7"
+    },
+    "xbl_config": {
+      "size": 360448,
+      "sha256": "9760062003776a481495286d6c0233bda307100ac2e95cb7b23fcb5aa17bf64d"
+    }
+  },
+  "xbl_config": {
+    "dtb_offset": "0x8708",
+    "path": "/sw/uefi",
+    "required": {
+      "EnableShell": 1,
+      "SecurityFlag": 196,
+      "DetectRetailUserAttentionHotkey": 0,
+      "DetectRetailUserAttentionHotkeyCode": 23,
+      "EnableUefiSecAppDebugLogDump": 0,
+      "AllowNonPersistentVarsInRetail": 1,
+      "EnableDisplayImageFv": 0,
+      "EnableVariablePolicyEngine": 0,
+      "USBHS1_Config": 0,
+      "UsbFnIoRevNum": 65537,
+      "DefaultBDSBootApp": "LinuxLoader",
+      "PlatConfigFileName": "uefiplatLA.cfg",
+      "OsTypeString": "LA",
+      "DefaultChargerApp": "QcomChargerApp"
+    },
+    "forbidden_present": [
+      "OEMSetupApp"
+    ]
+  },
+  "exact_modules": {
+    "QcomBds": {
+      "sha256": "426004d0eba512a0c33baf9f79e1c6ad723691e03a117f540dca79905dce1038",
+      "size_of_image": 106496
+    },
+    "DxeCore": {
+      "sha256": "c50728527212502367bfc39d5b7f0f7ccdb0db217edbb7b87505841a33d4e19f",
+      "size_of_image": 192512
+    },
+    "SecurityStubDxe": {
+      "sha256": "2e029953a561cb00133b67c415829567b67defb5dcaf99cef2519589927a3b7e",
+      "size_of_image": 53248
+    },
+    "VerifiedBootDxe": {
+      "sha256": "cb379fda2dc10c01d123c7e0a0640504580ac4bc4bd3405ba35dc641c61fe02f",
+      "size_of_image": 61440
+    },
+    "OplusSecurityDxe": {
+      "sha256": "9778820165fdb2a0e2c542dcb2cbd758e648b2dcb83f2b8430376c223b6c8020",
+      "size_of_image": 45056
+    },
+    "UsbConfigDxe": {
+      "sha256": "83a9d176f3fbcf7c0040f78d571ada8baf14c3cb3696c116b46a47d961f38c44",
+      "size_of_image": 90112
+    },
+    "XhciPciEmulation": {
+      "sha256": "5213d4d29ef7f7f0c379a6cfbcc804fc7b296956c55f956e78f1df9d6fa834de",
+      "size_of_image": 40960
+    },
+    "XhciDxe": {
+      "sha256": "da00e9e3794b3de47e2831d075138ea609ca2098851f854988bdbfccb35298de",
+      "size_of_image": 90112
+    },
+    "UsbBusDxe": {
+      "sha256": "d876be8611f9172cd9180524b28d3fe282def26f17d2ea808d3a196946d3e4e7",
+      "size_of_image": 81920
+    },
+    "UsbMassStorageDxe": {
+      "sha256": "01c9dbabbd55eefcc7c3a3c784adc8b9c7e2c5ad5603b645e38d562eec3c43a6",
+      "size_of_image": 49152
+    }
+  },
+  "retail_path": {
+    "hotkey": "SCAN_DOWN",
+    "physical_key": "Volume Down",
+    "removable_boot_path": "\\\\EFI\\\\BOOT\\\\BOOTAA64.EFI",
+    "qcombds_detect_hotkey_rva": "0xd0c0",
+    "qcombds_boot_option_start_rva": "0x24fc",
+    "qcombds_start_efi_rva": "0xcc44",
+    "qcombds_load_image_rva": "0xccf4",
+    "qcombds_start_image_rva": "0xce7c",
+    "securitystub_security2_auth_rva": "0x1474",
+    "securitystub_defer_rva": "0x198c",
+    "securitystub_execute_handlers_rva": "0x6f78",
+    "securitystub_end_of_dxe_byte_rva": "0xb2ac",
+    "securitystub_handler_count_rva": "0xb358",
+    "securitystub_handler_table_rva": "0xb360",
+    "registered_security2_handlers": 0,
+    "offline_status": "pass-candidate"
+  },
+  "probe": {
+    "sha256": "2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738",
+    "size": 2048,
+    "machine": 43620,
+    "subsystem": 10,
+    "entry_rva": 4096,
+    "requires_reloc": true
+  }
+}
