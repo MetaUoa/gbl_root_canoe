@@ -124,3 +124,52 @@ Next order:
 4. only then decide whether a one-shot firmware-UI request is safe and meaningful.
 
 Do not write `uefivarstore` and do not toggle security/debug policy as a shortcut.
+
+
+## Linux EFI runtime interface result
+
+On the current Android boot:
+
+~~~text
+/sys/firmware/efi            absent
+/sys/firmware/efi/efivars    absent
+efivarfs mount               absent
+~~~
+
+Therefore the standard Linux EFI Runtime Services / efivarfs path is not available to request firmware UI through `OsIndications` from Android.
+
+This does not contradict the bootloader's UEFI variable support: the bootloader reports volatile UEFI NV tables, but the Android kernel is not exposing EFI Runtime Services to userspace.
+
+Do not use raw `uefivarstore` partition edits as a substitute.
+
+## Exact current ABL fastboot command surface
+
+Static analysis of the profiled current LinuxLoader exposes these OEM command strings:
+
+~~~text
+oem audio-framework
+oem device-info
+oem disable-charger-screen
+oem disable-uart
+oem enable-charger-screen
+oem enable-initlog
+oem enable-uart
+oem off-mode-charge
+oem select-display-panel
+oem set-gpu-preemption
+oem set-hw-fence-value
+~~~
+
+Observed boot/reboot command strings:
+
+~~~text
+boot-fastboot
+boot-recovery
+reboot-bootloader
+reboot-fastboot
+reboot-recovery
+~~~
+
+No `boot-efi`, `reboot-uefi`, `oem shell`, or equivalent direct staged-EFI command string was found in the exact current LinuxLoader.
+
+Implication: do not blindly invoke guessed fastboot OEM EFI commands. The remaining non-flashing path search should continue through exact QcomBds/OPlus retail-path RE and runtime input evidence.
