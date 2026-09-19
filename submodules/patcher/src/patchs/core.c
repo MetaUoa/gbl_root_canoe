@@ -1,6 +1,7 @@
 #include "arm64_inst/utils.h"
 #include "patchs/core.h"
 #include <stdlib.h>
+#include <string.h>
 
 int32_t patch_abl_gbl(char* buffer, int32_t size) {
     char target[]      = { 'e',0, 'f',0, 'i',0, 's',0, 'p',0 };
@@ -171,6 +172,77 @@ int32_t patch_adrl_unlocked_to_locked(char* buffer, int32_t size, uint64_t load_
     return patched;
 }
 
+
+static uint64_t read_u64_le(const char* buffer, int32_t off) {
+    uint64_t value = 0;
+    memcpy(&value, buffer + off, sizeof(value));
+    return value;
+}
+
+static void write_u64_le(char* buffer, int32_t off, uint64_t value) {
+    memcpy(buffer + off, &value, sizeof(value));
+}
+
+/*
+ * PJZ110 / SM8750 semantic verified-boot-state patch.
+ *
+ * Known PJZ110 LinuxLoader builds contain a stable enum/string table:
+ *   0 -> green
+ *   1 -> orange
+ *   2 -> yellow
+ *   3 -> red
+ *
+ * The table moves between OTAs, so locate it structurally instead of using a
+ * fixed offset.  Only patch when exactly one valid table exists.  State 1 is
+ * redirected to the stock green string; the enum, control flow, DeviceInfo,
+ * VBRwDeviceState and KeyMaster/TEE paths are left untouched.
+ */
+int32_t patch_verified_state_orange_to_green(char* buffer, int32_t size) {
+    int32_t found = -1;
+    int32_t count = 0;
+
+    if (size < 64) return 0;
+    for (int32_t i = 0; i <= size - 64; i += 8) {
+        if (read_u64_le(buffer, i) != 0 ||
+            read_u64_le(buffer, i + 16) != 1 ||
+            read_u64_le(buffer, i + 32) != 2 ||
+            read_u64_le(buffer, i + 48) != 3) {
+            continue;
+        }
+
+        uint64_t green  = read_u64_le(buffer, i + 8);
+        uint64_t orange = read_u64_le(buffer, i + 24);
+        uint64_t yellow = read_u64_le(buffer, i + 40);
+        uint64_t red    = read_u64_le(buffer, i + 56);
+        if (green >= (uint64_t)size || orange >= (uint64_t)size ||
+            yellow >= (uint64_t)size || red >= (uint64_t)size) {
+            continue;
+        }
+        if (!str_at(buffer, size, (int64_t)green, "green") ||
+            !str_at(buffer, size, (int64_t)orange, "orange") ||
+            !str_at(buffer, size, (int64_t)yellow, "yellow") ||
+            !str_at(buffer, size, (int64_t)red, "red")) {
+            continue;
+        }
+        found = i;
+        count++;
+    }
+
+    if (count != 1) {
+        printf("Verified-state table candidates: %d (expected exactly 1)\n", count);
+        return count;
+    }
+
+    uint64_t green = read_u64_le(buffer, found + 8);
+    uint64_t orange = read_u64_le(buffer, found + 24);
+    printf("Found verified-state table at 0x%X\n", found);
+    printf("  state 0 green : 0x%llX\n", (unsigned long long)green);
+    printf("  state 1 orange: 0x%llX -> 0x%llX\n",
+           (unsigned long long)orange, (unsigned long long)green);
+    write_u64_le(buffer, found + 24, green);
+    return 1;
+}
+
 #include "patchs/oplus/warning.h"
 #include "patchs/oplus/forceenablefastboot.h"
 bool PatchBuffer(char* data, int32_t size) {
@@ -191,7 +263,22 @@ bool PatchBuffer(char* data, int32_t size) {
     int8_t lock_register_num = -1;
     int32_t num_patches = patch_abl_bootstate(data, size, &lock_register_num, &offset);
     if (num_patches == 0) {
-        printf("Error: Failed to find/patch ABL Boot State\n");
+        /*
+         * PJZ110 / SM8750 does not match the legacy BootState signature used
+         * by the original SM8845/SM8850 path.  Its Android-visible fake-lock
+         * state can instead be expressed entirely by the semantic cmdline
+         * selector above plus the verified-state enum/string table.
+         *
+         * Fail closed unless BOTH semantic anchors are unique.
+         */
+        int32_t verified_state_patches = patch_verified_state_orange_to_green(data, size);
+        if (patched_adrl == 1 && verified_state_patches == 1) {
+            printf("PJZ110-style semantic fake-lock path applied successfully\n");
+            printf("  DeviceInfo / VBRwDeviceState: untouched\n");
+            printf("  KeyMaster / TEE RootOfTrust: untouched\n");
+            return 1;
+        }
+        printf("Error: Failed to find legacy BootState and semantic PJZ110 path is incomplete\n");
         return 0;
     }
     printf("Anchor offset : 0x%X\n", offset);
