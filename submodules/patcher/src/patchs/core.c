@@ -106,70 +106,98 @@ int32_t source_callback(char* buffer, int32_t size, int32_t now_offset, int8_t c
     return 0;
 }
 
-int32_t patch_adrl_unlocked_to_locked(char* buffer, int32_t size, uint64_t load_base) {
-    if (size < 24) return 0;
-    int32_t patched = 0;
+static bool is_cmp_w_imm_zero(uint32_t raw, uint8_t* rn) {
+    if ((raw & 0x7F00001FU) != 0x7100001FU) return false;
+    if (((raw >> 10) & 0xFFFU) != 0) return false;
+    if (rn) *rn = (uint8_t)((raw >> 5) & 0x1FU);
+    return true;
+}
 
-    for (int32_t i = 0; i <= size - 24; i += 4) {
-        DecodedInst a0 = decode_at(buffer, i);
-        DecodedInst a1 = decode_at(buffer, i + 4);
-        DecodedInst b0 = decode_at(buffer, i + 8);
-        DecodedInst b1 = decode_at(buffer, i + 12);
+static bool is_csel_x_eq(uint32_t raw, uint8_t* rd, uint8_t* rn, uint8_t* rm) {
+    if ((raw & 0xFFE00C00U) != 0x9A800000U) return false;
+    if (((raw >> 12) & 0xFU) != 0) return false;
+    if (rd) *rd = (uint8_t)(raw & 0x1FU);
+    if (rn) *rn = (uint8_t)((raw >> 5) & 0x1FU);
+    if (rm) *rm = (uint8_t)((raw >> 16) & 0x1FU);
+    return true;
+}
+
+/*
+ * Locate the PJZ110-style Android-visible device-state selector without
+ * changing the input buffer.  Require the exact semantic shape used by all
+ * three known PJZ110 generations:
+ *
+ *   ADRP+ADD -> "unlocked"
+ *   ADRP+ADD -> "locked"
+ *   ADRP+ADD -> "androidboot.vbmeta.device_state"
+ *   ...
+ *   CMP Wstate,#0
+ *   CSEL Xvalue,Xlocked,Xunlocked,EQ
+ */
+static int32_t find_adrl_unlocked_to_locked(const char* buffer, int32_t size,
+                                            uint64_t load_base,
+                                            int32_t* match_offset) {
+    int32_t count = 0;
+    if (match_offset) *match_offset = -1;
+    if (size < 36) return 0;
+
+    for (int32_t i = 0; i <= size - 36; i += 4) {
+        DecodedInst a0 = decode_at((char*)buffer, i);
+        DecodedInst a1 = decode_at((char*)buffer, i + 4);
+        DecodedInst b0 = decode_at((char*)buffer, i + 8);
+        DecodedInst b1 = decode_at((char*)buffer, i + 12);
+        DecodedInst k0 = decode_at((char*)buffer, i + 16);
+        DecodedInst k1 = decode_at((char*)buffer, i + 20);
 
         if (a0.type != INST_ADRP || a1.type != INST_ADD_X_IMM) continue;
         if (a1.rt != a0.rt || a1.rn != a0.rt) continue;
-
         if (b0.type != INST_ADRP || b1.type != INST_ADD_X_IMM) continue;
         if (b1.rt != b0.rt || b1.rn != b0.rt) continue;
+        if (k0.type != INST_ADRP || k1.type != INST_ADD_X_IMM) continue;
+        if (k1.rt != k0.rt || k1.rn != k0.rt) continue;
+        if (a0.rt == b0.rt) continue;
 
+        int64_t unlocked = calc_adrl_file_offset(buffer, i, load_base);
+        int64_t locked = calc_adrl_file_offset(buffer, i + 8, load_base);
+        int64_t key = calc_adrl_file_offset(buffer, i + 16, load_base);
+        if (!str_at(buffer, size, unlocked, "unlocked")) continue;
+        if (!str_at(buffer, size, locked, "locked")) continue;
+        if (!str_at(buffer, size, key, "androidboot.vbmeta.device_state")) continue;
 
-        uint8_t xa = a0.rt, xb = b0.rt;
-        if (xa == xb) continue;
+        uint8_t state_reg = 0, csel_rd = 0, csel_rn = 0, csel_rm = 0;
+        if (!is_cmp_w_imm_zero(read_instr(buffer, i + 28), &state_reg)) continue;
+        if (!is_csel_x_eq(read_instr(buffer, i + 32), &csel_rd, &csel_rn, &csel_rm)) continue;
+        if (csel_rn != b0.rt || csel_rm != a0.rt) continue;
 
-        int64_t off0 = calc_adrl_file_offset(buffer, i,      load_base);
-        int64_t off1 = calc_adrl_file_offset(buffer, i + 8,  load_base);
-
-        if (!str_at(buffer, size, off0, "unlocked")) continue;
-        if (!str_at(buffer, size, off1, "locked"))   continue;
-        bool match = false;
-        for(int j=i+16; j<=i+40;j+=4){
-            if (j + 7 >= size) break;
-            DecodedInst c0 = decode_at(buffer, j);
-            DecodedInst c1 = decode_at(buffer, j + 4);
-            if(c0.type == INST_ADRP && c1.type == INST_ADD_X_IMM){
-                int64_t offc = calc_adrl_file_offset(buffer, j, load_base);
-                if(str_at(buffer, size, offc, "androidboot.vbmeta.device_state")){
-                    match = true;
-                    break;
-                }
-            }
-        }
-        if (!match) continue;
-        printf("Found ADRL triple at 0x%X:\n", i);
-        printf("  [0x%X] ADRP+ADD X%d -> file:0x%llX \"unlocked\"\n",
-               i, xa, (unsigned long long)off0);
-        printf("  [0x%X] ADRP+ADD X%d -> file:0x%llX \"locked\"\n",
-               i+8, xb, (unsigned long long)off1);
-
-        uint32_t new_adrp = adrp_with_rd(b0.raw, xa);
-        uint32_t new_add  = add_with_reg(b1.raw, xa);
-
-        printf("  Patch pair-0: ADRP %08X->%08X, ADD %08X->%08X\n",
-               a0.raw, new_adrp, a1.raw, new_add);
-
-        write_instr(buffer, i,     new_adrp);
-        write_instr(buffer, i + 4, new_add);
-
-        patched++;
-        i += 20;
+        printf("Found semantic device-state selector at 0x%X:\n", i);
+        printf("  unlocked X%d -> file:0x%llX\n", a0.rt, (unsigned long long)unlocked);
+        printf("  locked   X%d -> file:0x%llX\n", b0.rt, (unsigned long long)locked);
+        printf("  state W%d, output X%d\n", state_reg, csel_rd);
+        if (match_offset) *match_offset = i;
+        count++;
     }
+    return count;
+}
 
-    if (patched == 0)
-        printf("ADRL triple not found\n");
-    else
-        printf("ADRL patch applied: %d location(s)\n", patched);
-
-    return patched;
+static bool apply_adrl_unlocked_to_locked_at(char* buffer, int32_t size,
+                                             int32_t i) {
+    if (i < 0 || i + 16 > size) return false;
+    DecodedInst a0 = decode_at(buffer, i);
+    DecodedInst a1 = decode_at(buffer, i + 4);
+    DecodedInst b0 = decode_at(buffer, i + 8);
+    DecodedInst b1 = decode_at(buffer, i + 12);
+    if (a0.type != INST_ADRP || a1.type != INST_ADD_X_IMM ||
+        b0.type != INST_ADRP || b1.type != INST_ADD_X_IMM) {
+        return false;
+    }
+    uint8_t unlocked_reg = a0.rt;
+    uint32_t new_adrp = adrp_with_rd(b0.raw, unlocked_reg);
+    uint32_t new_add = add_with_reg(b1.raw, unlocked_reg);
+    printf("  device-state patch: 0x%X %08X->%08X, 0x%X %08X->%08X\n",
+           i, a0.raw, new_adrp, i + 4, a1.raw, new_add);
+    write_instr(buffer, i, new_adrp);
+    write_instr(buffer, i + 4, new_add);
+    return true;
 }
 
 
@@ -184,24 +212,19 @@ static void write_u64_le(char* buffer, int32_t off, uint64_t value) {
 }
 
 /*
- * PJZ110 / SM8750 semantic verified-boot-state patch.
- *
- * Known PJZ110 LinuxLoader builds contain a stable enum/string table:
- *   0 -> green
- *   1 -> orange
- *   2 -> yellow
- *   3 -> red
- *
- * The table moves between OTAs, so locate it structurally instead of using a
- * fixed offset.  Only patch when exactly one valid table exists.  State 1 is
- * redirected to the stock green string; the enum, control flow, DeviceInfo,
- * VBRwDeviceState and KeyMaster/TEE paths are left untouched.
+ * Locate the PJZ110 verified-state enum/string table without modifying it:
+ *   0 -> green, 1 -> orange, 2 -> yellow, 3 -> red.
  */
-int32_t patch_verified_state_orange_to_green(char* buffer, int32_t size) {
+static int32_t find_verified_state_table(const char* buffer, int32_t size,
+                                         int32_t* table_offset,
+                                         uint64_t* green_value) {
     int32_t found = -1;
     int32_t count = 0;
-
+    uint64_t found_green = 0;
+    if (table_offset) *table_offset = -1;
+    if (green_value) *green_value = 0;
     if (size < 64) return 0;
+
     for (int32_t i = 0; i <= size - 64; i += 8) {
         if (read_u64_le(buffer, i) != 0 ||
             read_u64_le(buffer, i + 16) != 1 ||
@@ -225,22 +248,41 @@ int32_t patch_verified_state_orange_to_green(char* buffer, int32_t size) {
             continue;
         }
         found = i;
+        found_green = green;
         count++;
     }
 
-    if (count != 1) {
+    if (count == 1) {
+        if (table_offset) *table_offset = found;
+        if (green_value) *green_value = found_green;
+        printf("Found semantic verified-state table at 0x%X\n", found);
+    } else {
         printf("Verified-state table candidates: %d (expected exactly 1)\n", count);
-        return count;
     }
+    return count;
+}
 
-    uint64_t green = read_u64_le(buffer, found + 8);
-    uint64_t orange = read_u64_le(buffer, found + 24);
-    printf("Found verified-state table at 0x%X\n", found);
-    printf("  state 0 green : 0x%llX\n", (unsigned long long)green);
-    printf("  state 1 orange: 0x%llX -> 0x%llX\n",
-           (unsigned long long)orange, (unsigned long long)green);
-    write_u64_le(buffer, found + 24, green);
-    return 1;
+static bool apply_verified_state_green_at(char* buffer, int32_t size,
+                                          int32_t table_offset,
+                                          uint64_t green_value) {
+    if (table_offset < 0 || table_offset + 32 > size ||
+        green_value >= (uint64_t)size) {
+        return false;
+    }
+    uint64_t orange = read_u64_le(buffer, table_offset + 24);
+    printf("  verified-state patch: state 1 0x%llX -> 0x%llX\n",
+           (unsigned long long)orange, (unsigned long long)green_value);
+    write_u64_le(buffer, table_offset + 24, green_value);
+    return true;
+}
+
+static bool is_known_pjz110_semantic_profile(int32_t size,
+                                              int32_t device_state_offset,
+                                              int32_t verified_table_offset) {
+    return
+        (size == 798720 && device_state_offset == 0x4AF3C && verified_table_offset == 0xA2C90) ||
+        (size == 802816 && device_state_offset == 0x4C38C && verified_table_offset == 0xA3CB0) ||
+        (size == 778240 && device_state_offset == 0x3BDFC && verified_table_offset == 0x9B9A8);
 }
 
 #include "patchs/oplus/warning.h"
@@ -249,61 +291,87 @@ bool PatchBuffer(char* data, int32_t size) {
     if (patch_abl_gbl(data, size) != 0)
         printf("Warning: Failed to patch ABL GBL\n");
 
-    int32_t patched_adrl = patch_adrl_unlocked_to_locked(data, size, 0);
-    if (patched_adrl == 0){
-        printf("Warning: ADRL triple not found, skipping\n");
-        // not critical, continue with other patches
+    /*
+     * Locate the Android-visible selector before writing it.  The legacy
+     * SM8845/SM8850 path still uses this patch when available; the PJZ110 path
+     * additionally requires a known semantic profile and verified-state table.
+     */
+    int32_t semantic_adrl_offset = -1;
+    int32_t semantic_adrl_count =
+        find_adrl_unlocked_to_locked(data, size, 0, &semantic_adrl_offset);
+    if (semantic_adrl_count > 1) {
+        printf("Error: Multiple semantic device-state selectors found (%d)\n",
+               semantic_adrl_count);
+        return false;
     }
 
-    if(patched_adrl > 1){
-        printf("Warning: Multiple ADRL triples patched (%d), verify if all are correct\n", patched_adrl);
-        return false; //cr
-    }
     int32_t offset = -1;
     int8_t lock_register_num = -1;
-    int32_t num_patches = patch_abl_bootstate(data, size, &lock_register_num, &offset);
+    int32_t num_patches =
+        patch_abl_bootstate(data, size, &lock_register_num, &offset);
+
     if (num_patches == 0) {
-        /*
-         * PJZ110 / SM8750 does not match the legacy BootState signature used
-         * by the original SM8845/SM8850 path.  Its Android-visible fake-lock
-         * state can instead be expressed entirely by the semantic cmdline
-         * selector above plus the verified-state enum/string table.
-         *
-         * Fail closed unless BOTH semantic anchors are unique.
-         */
-        int32_t verified_state_patches = patch_verified_state_orange_to_green(data, size);
-        if (patched_adrl == 1 && verified_state_patches == 1) {
-            printf("PJZ110-style semantic fake-lock path applied successfully\n");
-            printf("  DeviceInfo / VBRwDeviceState: untouched\n");
-            printf("  KeyMaster / TEE RootOfTrust: untouched\n");
-            return 1;
+        int32_t verified_table_offset = -1;
+        uint64_t green_value = 0;
+        int32_t verified_count =
+            find_verified_state_table(data, size,
+                                      &verified_table_offset, &green_value);
+
+        if (semantic_adrl_count != 1 || verified_count != 1) {
+            printf("Error: Failed to find a unique PJZ110 semantic fake-lock path\n");
+            return false;
         }
-        printf("Error: Failed to find legacy BootState and semantic PJZ110 path is incomplete\n");
-        return 0;
+        if (!is_known_pjz110_semantic_profile(
+                size, semantic_adrl_offset, verified_table_offset)) {
+            printf("Error: Semantic layout is not a known PJZ110 firmware profile; refusing to patch\n");
+            return false;
+        }
+        if (!apply_adrl_unlocked_to_locked_at(
+                data, size, semantic_adrl_offset) ||
+            !apply_verified_state_green_at(
+                data, size, verified_table_offset, green_value)) {
+            printf("Error: Failed to apply PJZ110 semantic fake-lock patch\n");
+            return false;
+        }
+
+        printf("PJZ110 semantic ABL fake-lock applied successfully\n");
+        printf("  androidboot.vbmeta.device_state -> locked\n");
+        printf("  verified boot state 1 (orange) -> green\n");
+        printf("  DeviceInfo / VBRwDeviceState: untouched\n");
+        printf("  KeyMaster / TEE RootOfTrust: untouched\n");
+        return true;
     }
+
+    /* Original legacy path. */
+    if (semantic_adrl_count == 1) {
+        if (!apply_adrl_unlocked_to_locked_at(
+                data, size, semantic_adrl_offset)) {
+            printf("Warning: Failed to apply ADRL fake-lock selector patch\n");
+        }
+    } else {
+        printf("Warning: ADRL triple not found, skipping\n");
+    }
+
     printf("Anchor offset : 0x%X\n", offset);
     printf("Lock register : W%d\n", (int)lock_register_num);
     printf("Boot patches: %d\n", num_patches);
 
     int32_t global_var_offset = -1;
-    if (find_ldrB_instructio_reverse(data, size, offset, lock_register_num, &global_var_offset, source_callback) != 0) {
+    if (find_ldrB_instructio_reverse(
+            data, size, offset, lock_register_num,
+            &global_var_offset, source_callback) != 0) {
         printf("Warning: Failed to patch LDRB->STRB chain for W%d\n",
                (int)lock_register_num);
     }
-    printf("Global variable offset (for warning patch): 0x%X\n", global_var_offset);
-    // ===================== 启用去黄字补丁 =====================
+    printf("Global variable offset (for warning patch): 0x%X\n",
+           global_var_offset);
 
-
-    //oplus
     if (!patch_warning(data, size, global_var_offset)) {
         printf("OPlus Warning: patch_warning failed\n");
     }
-
-    //force enable fastboot for unofficially unlock
     if (!patch_fastboot(data, size, global_var_offset)) {
         printf("OPlus Warning: patch_fastboot failed\n");
     }
-    // ==========================================================
 
-    return 1;
+    return true;
 }
