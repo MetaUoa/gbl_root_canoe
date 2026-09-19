@@ -313,6 +313,21 @@ If the bootloader is not actually unlocked, stop.
 
 ---
 
+## 7.1 Runtime UEFI retail evidence
+
+Current-device `/proc/bootloader_log` confirms the real shipping firmware reports:
+
+~~~text
+UEFI Ver     : 6.0.260728.BOOT.MXF.2.5.1-00265-PAKALA-1.104700.16
+Retail       : TRUE
+OplusSecurityDxeEntryPoint. Status:Success
+INFO: UEFI NV tables are enabled as VOLATILE!
+~~~
+
+This is runtime evidence from the actual PJZ110, not merely a static string hit.
+
+Implication: the generic Qualcomm BOOT.MXF physical-hotkey path that calls `LaunchBDSMenu()` only under `!RETAIL` should be treated as **low-probability** on this retail device. Do not spend repeated boot cycles brute-forcing key combinations. The next priority is read-only discovery of any OEMSetupApp / OsIndications / staged EFI route that remains reachable in retail mode.
+
 ## 8. Stage T2 — Stock BDS menu reachability
 
 Purpose: determine whether the stock retail PJZ110 exposes the already-present QcomBds menu.
