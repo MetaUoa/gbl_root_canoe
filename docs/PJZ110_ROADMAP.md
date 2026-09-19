@@ -81,3 +81,10 @@ tools/pjz110_capture_validation.ps1
 ```
 
 Final acceptance is defined in `docs/PJZ110_ABL_FAKE_LOCK_VALIDATION.md`.
+
+
+## True-device execution plan
+
+The staged live-device procedure is documented in `docs/PJZ110_TRUE_DEVICE_VALIDATION_PLAN.md`.
+
+The first live session is intentionally limited to `T0 -> T1 -> T2`: baseline capture, real-unlock confirmation, and non-flashing stock BDS/ToolsFV Shell reachability. External EFI execution, original LinuxLoader chainload, and fake-locked LinuxLoader validation are gated behind the preceding stages.
