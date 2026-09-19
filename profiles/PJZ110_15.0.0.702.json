@@ -1,0 +1,47 @@
+{
+  "id": "pjz110-15.0.0.702-cn01",
+  "device": "OnePlus 13",
+  "model": "PJZ110",
+  "platform": "SM8750",
+  "soc_codename": "Pakala",
+  "build": "PJZ110_15.0.0.702(CN01)",
+  "abl_sha256": "fa9a688137393b101d65b8833033d3ddbd9674abf546557e07d43bbe3ff6b6a2",
+  "xbl_sha256": "74c196f99aba348e2eb478c8c5fa2d4361867dc597b14c6c44fc8c78cf75a20e",
+  "xbl_config_sha256": "0f36036b2ab69b1b5eea79bb7bfa866cc6f773e8086de1df5346e48194d11b34",
+  "linuxloader_sha256": "5401e5daeed7260066a6505a31f59470d07c57f27bc6871738866f713c03fed6",
+  "linuxloader_size": 778240,
+  "patched_linuxloader_sha256": "e37df7c53963f524d05e751ffe17f04a7315b368cee8bfaf4ed55dc7fd7556f1",
+  "changed_byte_count": 7,
+  "qcom_xbl_version": "BOOT.MXF.2.5.1-00040.1-PAKALA-1.81269.25",
+  "observations": {
+    "legacy_ascii_efisp_present": false,
+    "legacy_utf16_efisp_present": false,
+    "load_image_no_auth_wrapper": true,
+    "load_boot_image_no_auth": true,
+    "load_image_and_auth_vb1": true,
+    "xbl_generation": "older than the 16.x 00265 Pakala baseline"
+  },
+  "patches": {
+    "androidboot.vbmeta.device_state": {
+      "status": "implemented_offline",
+      "unlocked_adrp": "0x3bdfc",
+      "unlocked_add": "0x3be00",
+      "locked_adrp": "0x3be04",
+      "locked_add": "0x3be08"
+    },
+    "androidboot.verifiedbootstate": {
+      "status": "implemented_offline",
+      "state_table": "0x9b9a8",
+      "green_pointer": "0x9b9b0",
+      "orange_pointer": "0x9b9c0",
+      "green_string": "0x825a2"
+    },
+    "gbl_efisp_chain": {
+      "status": "not_validated",
+      "legacy_efisp_marker": false
+    },
+    "tee_keymaster_root_of_trust": {
+      "status": "intentionally_not_modified"
+    }
+  }
+}
