@@ -173,3 +173,37 @@ reboot-recovery
 No `boot-efi`, `reboot-uefi`, `oem shell`, or equivalent direct staged-EFI command string was found in the exact current LinuxLoader.
 
 Implication: do not blindly invoke guessed fastboot OEM EFI commands. The remaining non-flashing path search should continue through exact QcomBds/OPlus retail-path RE and runtime input evidence.
+
+
+## Physical volume-key validation
+
+A second real-device boot was captured while Volume Up was held during reboot.
+
+Runtime result:
+
+~~~text
+vol_up_pressed:1,vol_down_pressed:0
+ButtonsDxeTest: Keypress SDAM data payload 4
+KeyPress:0, BootReason:62
+Fastboot=0, Recovery:0
+~~~
+
+This proves the physical Volume Up input is visible during the PJZ110 UEFI phase. The later LinuxLoader `KeyPress:0` is a different observation point and does not negate the earlier UEFI-level detection.
+
+The corresponding Qualcomm BOOT.MXF.2.5.1 ButtonsLib reference mapping is:
+
+~~~text
+Vol+ alone        -> SCAN_UP
+Vol- alone        -> SCAN_DOWN
+Vol+ + Vol-       -> SCAN_ESC
+Vol+ + Power      -> SCAN_HOME
+Vol- + Power      -> SCAN_DELETE
+~~~
+
+`PlatformBdsDetectHotKey()` specifically tests for `SCAN_HOME`.
+
+Therefore a PJZ110 does not require a USB Home keyboard merely to generate the reference BDS hotkey: the reference button stack maps **Vol+ + Power** to `SCAN_HOME`.
+
+Important limitation: the same reference BDS code only launches the generic BDS menu through the non-retail branch. The real PJZ110 reports `Retail=TRUE`. The physical combo is therefore useful as a final non-writing runtime confirmation of hotkey handling, but a failure to display the menu would be consistent with the already-observed retail gate.
+
+The vendor SDAM payload numeric value is retained as runtime evidence only; do not infer the physical-key bit assignment from that value without matching the exact OPlus SBL implementation.
