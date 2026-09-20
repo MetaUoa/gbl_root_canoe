@@ -16,7 +16,7 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M9 — Resolve legacy deployment mismatch: PJZ110 has no EFISP; stock Retail routes must be analyzed independently
 - [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
 - [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
-- [ ] M12 — True-device validation deferred until R4 staged/memory EFI obtains a proven non-flashing carrier
+- [ ] M12 — True-device validation deferred until a separately reviewed reversible execution carrier is proven
 - [ ] M13 — True-device ABL fake-lock validation: bootconfig locked/green while real BL stays unlocked
 - [ ] M14 — OTA/profile lifecycle and regression fixtures
 - [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
