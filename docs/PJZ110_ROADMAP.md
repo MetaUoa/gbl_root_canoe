@@ -28,21 +28,22 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M21 — Analyze Pakala USB stack; drivers are present but current Retail DFP auto-start is gated off
 - [x] M22 — Finalize observable read-only probe with deterministic 5-second banner hold
 - [x] M23 — Close P0-P4: USB Host auto-start CLOSED, DFP->XHCI BLOCKED, late removable R3 CLOSED, LinuxLoader PASS-IN-PRINCIPLE
-- [ ] M24 — Resolve R4 staged/memory EFI execution before the normal LinuxLoader handoff
+- [x] M24 — Close R4-A→R4-D: no stock non-flashing pre-LinuxLoader EFI carrier identified; R4-D CLOSED
+- [ ] M25 — Separate deployment design review after stock-route closure; require a reversible A/B rollback plan before any persistent experiment
 
 ## Current validation boundary
 
 Three real PJZ110 boot-chain baselines have been analyzed:
 
-- PJZ110_15.0.0.702(CN01)
-- PJZ110_16.0.3.501(CN01)
-- PJZ110_16.0.10.501(CN01)
+- `PJZ110_15.0.0.702(CN01)`
+- `PJZ110_16.0.3.501(CN01)`
+- `PJZ110_16.0.10.501(CN01)`
 
 All three support the guarded offline software-visible fake-lock patch and all
-three lack the legacy efisp marker. The real partition map also has no efisp
-partition.
+three lack the legacy `efisp` marker. The real partition map also has no
+`efisp` partition.
 
-For the exact current build, P0-P4 are now closed offline:
+For the exact current build, P0-P4 and R4-A→R4-D are now closed offline:
 
 ~~~text
 P0 exact baseline             PASS
@@ -50,40 +51,38 @@ P1 USB Host auto-start        CLOSED
 P2 normal DFP -> XHCI         BLOCKED
 P3 late Vol- removable R3     CLOSED
 P4 LinuxLoader load context   PASS-IN-PRINCIPLE
+
+R4-A stock RAM/FV/EFI search  PASS-ENUMERATED
+R4-B pre-LinuxLoader carriers INTERNAL-ONLY
+R4-C external pre-LL source   NONE-FOUND
+R4-D stock non-flash carrier  CLOSED
 ~~~
 
-Two independent findings retire the previously proposed Vol-/OTG route:
+R4 found genuine internal staging machinery, including the UFS PIL ABL
+`ELF_FV` flow, the authenticated PIL buffer API, the flashless preloaded ABL
+RAM-partition flow, and a 4 MiB `FV_Region` used by debug ToolsFV loading.
+None provides a proven external, temporary, pre-LinuxLoader EFI carrier on the
+current Retail/UFS configuration.
 
-1. exact UsbConfigDxe has InitUsbControllerOnBoot == 0, so a normal Type-C DFP
-   attach does not call UsbStartController and does not create the host-mode
-   controller handle required by XhciPciEmulation;
-2. DefaultBDSBootApp is LinuxLoader, and the normal non-returning LinuxLoader
-   launch happens before the later QcomBdsDetectBootHotKey / SCAN_DOWN path.
+Fastboot download memory is externally controllable, but it exists inside the
+already-running LinuxLoader and the stock `boot` command consumes an Android
+boot image through `LoadImageAndAuth -> BootLinux`; it is not a pre-LinuxLoader
+UEFI PE chainloader.
 
-Therefore no live Vol- + OTG / BOOTAA64.EFI test should be performed for this
-exact build.
+Therefore no live EFI execution test is currently justified. The read-only
+`BOOTAA64.EFI` probe remains available only if a separately reviewed carrier is
+found later.
 
-LinuxLoader itself remains a normal AArch64 EFI application with no observed
-LoadedImage-device-path or ABL-FV self-origin dependency. If a stock
-pre-ExitBootServices path can LoadImage/StartImage it, external file origin is
-not the identified blocker.
-
-The deployment research target is now:
-
-~~~text
-R4:
-stock staged/memory EFI execution
-    ->
-before normal PlatBdsLaunchDefaultApps -> LinuxLoader handoff
-    ->
-temporary, non-flashing carrier
-~~~
+The next deployment milestone is no longer another stock-route search. M25 is a
+separate design review with the same fail-closed safety boundary and explicit
+A/B rollback requirements before any persistent experiment.
 
 See:
 
-- docs/PJZ110_RETAIL_QCOMBDS_RE.md
-- profiles/PJZ110_16.0.10.501_retail_path.json
-- tools/pjz110_retail_path_check.py
+- `docs/PJZ110_R4_STAGED_MEMORY_EFI_RE.md`
+- `profiles/PJZ110_16.0.10.501_r4.json`
+- `tools/pjz110_r4_check.py`
+- `docs/PJZ110_RETAIL_QCOMBDS_RE.md`
 
 ## Safety contract
 
@@ -132,6 +131,6 @@ Final acceptance is defined in `docs/PJZ110_ABL_FAKE_LOCK_VALIDATION.md`.
 
 The staged live-device procedure is documented in `docs/PJZ110_TRUE_DEVICE_VALIDATION_PLAN.md`.
 
-The earlier BDS/ToolsFV Shell and removable-media live stages are superseded. Do not resume live EFI execution until R4 identifies a proven non-flashing staged/memory carrier. The read-only BOOTAA64.EFI probe remains available for that future carrier.
+The earlier BDS/ToolsFV Shell and removable-media live stages are superseded. R4 also closed the analyzed stock staged/memory candidates. Do not resume live EFI execution until a separately reviewed deployment design identifies a proven reversible carrier. The read-only BOOTAA64.EFI probe remains available for that future carrier.
 
 Retail QcomBds reverse-engineering report: `docs/PJZ110_RETAIL_QCOMBDS_RE.md`.
