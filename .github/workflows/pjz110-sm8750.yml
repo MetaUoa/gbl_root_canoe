@@ -89,6 +89,11 @@ jobs:
           assert actual == expected, (actual, expected)
           print('probe PE validation: PASS')
           print('reference probe SHA256:', actual)
+          import base64
+          ref=Path('tools/pjz110_probe/BOOTAA64.EFI.b64').read_text().strip()
+          decoded=base64.b64decode(ref, validate=True)
+          assert decoded == b
+          print('reference probe base64 validation: PASS')
           PY
       - name: Installer shell syntax check
         run: bash -n targets/magisk_module/module/customize.sh
