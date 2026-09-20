@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "scope": "three exact PJZ110 LinuxLoader profiles",
+  "expected": {
+    "warning_reference_count": 1,
+    "legacy_nearby_cbz_w_count": 0,
+    "warning_control_overlap": [],
+    "warning_patch_authorized": false,
+    "state_predicate": "QCOM_VERIFIEDBOOT_PROTOCOL.VBIsDeviceSecure-POLARITY-UNRESOLVED",
+    "M8": "CLOSED-NO-SAFE-UI-ONLY-PATCH"
+  },
+  "profiles": [
+    {"build": "PJZ110_15.0.0.702(CN01)", "linuxloader_sha256": "5401e5daeed7260066a6505a31f59470d07c57f27bc6871738866f713c03fed6", "warning_resources": {"orange_title": [637416], "oplus_title": [558486], "long_warning": [633366]}, "adrl_offset": 223424, "function_start": 223296, "function_end": 223580, "call_xrefs": [61200], "state_dispatch": {"source_call": 61048, "source_target": 106092, "stack_state_store": 61056, "warning_case_index": 1}, "protocol_evidence": {"verified_boot_guid_offsets": [616080], "vtable_method_offsets": [56]}, "local_gate": {"offset": 223420, "condition": "LS", "target": 223580, "raw": "0x54000509"}, "fake_lock_changed_offsets": ["0x3bdfc", "0x3bdff", "0x3be01", "0x3be02", "0x9b9c0", "0x9b9c1", "0x9b9c2"]},
+    {"build": "PJZ110_16.0.3.501(CN01)", "linuxloader_sha256": "1873bdfd2654decba1ac50d2c0d1d3aa61423f11123f7301743be78da7f63333", "warning_resources": {"orange_title": [670960], "oplus_title": [580615], "long_warning": [666910]}, "adrl_offset": 290384, "function_start": 290256, "function_end": 290540, "call_xrefs": [62108], "state_dispatch": {"source_call": 61964, "source_target": 108492, "stack_state_store": 61972, "warning_case_index": 1}, "protocol_evidence": {"verified_boot_guid_offsets": [641976], "vtable_method_offsets": [56]}, "local_gate": {"offset": 290380, "condition": "LS", "target": 290540, "raw": "0x54000509"}, "fake_lock_changed_offsets": ["0x4c38c", "0x4c38d", "0x4c38f", "0x4c391", "0x4c392", "0xa3cc8", "0xa3cc9"]},
+    {"build": "PJZ110_16.0.10.501(CN01)", "linuxloader_sha256": "4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b", "warning_resources": {"orange_title": [666832], "oplus_title": [574957], "long_warning": [662814]}, "adrl_offset": 285184, "function_start": 285056, "function_end": 285340, "call_xrefs": [61684], "state_dispatch": {"source_call": 61540, "source_target": 108988, "stack_state_store": 61548, "warning_case_index": 1}, "protocol_evidence": {"verified_boot_guid_offsets": [635888], "vtable_method_offsets": [56]}, "local_gate": {"offset": 285180, "condition": "LS", "target": 285340, "raw": "0x54000509"}, "fake_lock_changed_offsets": ["0x4af3c", "0x4af3d", "0x4af3f", "0x4af41", "0x4af42", "0xa2ca8", "0xa2ca9"]}
+  ]
+}

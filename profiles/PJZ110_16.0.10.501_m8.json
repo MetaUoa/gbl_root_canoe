@@ -1,0 +1,38 @@
+{
+  "id": "pjz110-16.0.10.501-m8-warning-v1",
+  "build": "PJZ110_16.0.10.501(CN01)",
+  "linuxloader": {
+    "size": 798720,
+    "sha256": "4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b"
+  },
+  "resources": {
+    "orange_title": [666832],
+    "oplus_title": [574957],
+    "long_warning": [662814]
+  },
+  "reference": {
+    "adrl_offset": 285184,
+    "function_start": 285056,
+    "function_end": 285340,
+    "call_xrefs": [61684],
+    "state_dispatch": {"source_call": 61540, "source_target": 108988, "stack_state_store": 61548, "warning_case_index": 1},
+    "legacy_nearby_cbz_w": [],
+    "local_gate": {
+      "offset": 285180,
+      "kind": "B.cond",
+      "condition": "LS",
+      "target": 285340,
+      "raw": "0x54000509"
+    }
+  },
+  "fake_lock_changed_offsets": ["0x4af3c", "0x4af3d", "0x4af3f", "0x4af41", "0x4af42", "0xa2ca8", "0xa2ca9"],
+  "protocol_evidence": {"verified_boot_guid_offsets": [635888], "vtable_method_offsets": [56], "candidate": "QCOM_VERIFIEDBOOT_PROTOCOL.VBIsDeviceSecure"},
+  "expected": {
+    "warning_control_overlap": [],
+    "legacy_warning_patch_applicable": false,
+    "state_predicate": "QCOM_VERIFIEDBOOT_PROTOCOL.VBIsDeviceSecure-POLARITY-UNRESOLVED",
+    "warning_patch_authorized": false,
+    "cross_generation": "CONFIRMED-THREE-EXACT-PROFILES",
+    "M8": "CLOSED-NO-SAFE-UI-ONLY-PATCH"
+  }
+}
