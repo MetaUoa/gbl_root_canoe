@@ -873,3 +873,256 @@ Holding for 5 seconds, then returning to firmware boot manager.
 There is no RuntimeServices pointer dereference, no BlockIo/DiskIo access, no file-write call, no SetVariable call, and no reset/provisioning call. The only BootServices action added for observability is the five-second `Stall()`.
 
 Therefore the probe is ready as the first future true-device payload once the user resumes live validation. The five-second hold removes the earlier risk that the success banner could disappear too quickly to observe.
+
+
+# 21. P0-P4 offline closure
+
+> [!IMPORTANT]
+> This section supersedes the earlier R3 PASS-CANDIDATE conclusion in sections 16-20.
+> The presence of the Pakala XHCI/mass-storage stack is not sufficient to make
+> the stock Retail removable path reachable on the exact current PJZ110 build.
+
+The exact current artifacts were re-checked as one fail-closed P0-P4 set with
+tools/pjz110_retail_path_check.py --full-p0-p4.
+
+~~~text
+P0 baseline            : PASS
+P1 USB host auto-start : CLOSED
+P2 DFP -> XHCI         : BLOCKED
+P3 late removable BDS  : CLOSED
+P4 LinuxLoader context : PASS-IN-PRINCIPLE
+RESULT                 : PASS
+~~~
+
+Here RESULT: PASS means the offline conclusions were reproduced. It does not mean
+that the removable route is usable.
+
+## 22. P0 — exact baseline and XBL_CONFIG
+
+Frozen hashes remain:
+
+~~~text
+ABL       c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed
+UEFI      8d2670cb7790552c035bfa95896d561e7defb2414c8a6d538a3fdca2690879cc
+ToolsFV   c5da520b05b736875170248d2c80e5060edfb435c1e394acfb5489c5fef12eb7
+XBL_CONFIG 9760062003776a481495286d6c0233bda307100ac2e95cb7b23fcb5aa17bf64d
+~~~
+
+The active DTB remains at offset 0x8708. Relevant values live in the actual child
+nodes:
+
+~~~text
+/sw/uefi/int_param:
+  EnableShell                     = 1
+  SecurityFlag                    = 0xC4
+  DetectRetailUserAttentionHotkey = 0
+  AllowNonPersistentVarsInRetail  = 1
+
+/sw/uefi/str_param:
+  PlatConfigFileName              = uefiplatLA.cfg
+  OsTypeString                    = LA
+  DefaultChargerApp               = QcomChargerApp
+  DefaultBDSBootApp               = LinuxLoader
+
+/soc/usb0/usb_overwrite_cfg:
+  status                          = disabled
+  usb_mode                        = 3
+~~~
+
+No OEMSetupApp property exists under /sw/uefi. The verifier now checks these real
+child-node paths rather than treating all UEFI properties as direct children of
+/sw/uefi.
+
+## 23. P1/P2 — exact USB Host gate and DFP -> XHCI chain
+
+The exact current UsbConfigDxe SHA256 is:
+
+~~~text
+83a9d176f3fbcf7c0040f78d571ada8baf14c3cb3696c116b46a47d961f38c44
+~~~
+
+UsbStartController is at approximately RVA 0x4470. All AArch64 BL call sites in
+the exact module that target it are:
+
+~~~text
+0x1618
+0x1D34
+0x431C
+0x4A60
+0x4F90
+0x504C
+~~~
+
+The Type-C DFP attach path reaches the call at 0x4A60, but it is guarded by the
+build PCD byte at RVA 0xE456:
+
+~~~text
+0x4A18  48 00 00 D0
+0x4A1C  08 59 51 39
+0x4A20  68 02 00 34
+...
+0x4A58  E0 03 1F 2A
+0x4A5C  E1 03 15 2A
+0x4A60  84 FE FF 97
+
+RVA 0xE456 = 0x00
+~~~
+
+Semantically:
+
+~~~text
+DFP attach
+  -> select USB_HOST_MODE_XHCI
+  -> read InitUsbControllerOnBoot
+  -> value == 0
+  -> skip UsbStartController
+~~~
+
+This matches the same-version Pakala build configuration:
+
+~~~text
+InitUsbControllerOnBoot = FALSE
+HostModeSupported       = FALSE
+~~~
+
+The exact QcomBds contains none of the byte sequences for
+gQcomUsbConfigProtocolGuid, gInitUsbControllerGuid, or
+gEfiEventToggleUsbModeGuid, so QcomBds does not provide the missing controller
+start step.
+
+XhciPciEmulation is present, but it expects a controller handle carrying the
+QcomUsbConfig protocol with modeType USB_HOST_MODE_XHCI. That handle is normally
+created by UsbStartController.
+
+~~~text
+DFP attach
+  -> host mode selected in software
+  -> InitUsbControllerOnBoot == 0
+  X  UsbStartController
+  X  HostHandle
+  X  XhciPciEmulation binding
+  X  XhciDxe / UsbBusDxe / USB mass storage
+~~~
+
+Therefore:
+
+~~~text
+P1 = CLOSED
+P2 = BLOCKED
+~~~
+
+BdsConnectAllDrivers cannot compensate for a host-mode controller handle that was
+never created.
+
+## 24. P3 — late Vol-/removable path is not reached during normal LA boot
+
+A second and stronger blocker exists independently of USB Host startup.
+
+The current XBL_CONFIG specifies:
+
+~~~text
+DefaultBDSBootApp = LinuxLoader
+~~~
+
+The exact QcomBds ordering is:
+
+~~~text
+BdsPlatformInit
+  -> ProcessHotkeys
+  -> PlatBdsProcessDTconfig
+  -> PlatBdsLaunchDefaultApps
+       -> DefaultBDSBootApp = LinuxLoader
+       -> LaunchAppFromGuidedFv(gEfiAblFvNameGuid, LinuxLoader)
+       -> normal Android boot does not return
+  -> SetPlatformSecurity
+  -> provisioning / post-security
+  -> OEM setup handling
+  -> QcomBdsDetectBootHotKey
+       -> SCAN_DOWN / removable-media request
+~~~
+
+Thus the late Vol-/SCAN_DOWN path is real code, but normal boot transfers into
+LinuxLoader before that detector executes. It is reached only if the default
+LinuxLoader launch fails or returns.
+
+The current route is therefore closed twice:
+
+~~~text
+blocker A: USB Host auto-start is disabled
+blocker B: LinuxLoader launches before the late removable hotkey detector
+~~~
+
+Final P3 state:
+
+~~~text
+R3 / Vol- -> removable FAT -> BOOTAA64.EFI
+CLOSED for PJZ110_16.0.10.501(CN01) normal stock boot
+~~~
+
+Do not perform the previously planned live Vol- + OTG probe for this build.
+
+## 25. P4 — LinuxLoader external execution context
+
+The exact current LinuxLoader remains:
+
+~~~text
+SHA256 4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b
+size   798720
+PE     AArch64 / EFI application
+entry  RVA 0x1000
+imports empty
+~~~
+
+The exact image contains none of:
+
+~~~text
+EFI_LOADED_IMAGE_PROTOCOL_GUID
+EFI_LOADED_IMAGE_DEVICE_PATH_PROTOCOL_GUID
+gEfiAblFvNameGuid
+
+LoadOptions
+LoadedImage
+FilePath
+\EFI\
+~~~
+
+Its entry wrapper receives the normal UEFI ImageHandle and SystemTable pair and
+continues into the statically linked LinuxLoader implementation.
+
+This supports the narrower conclusion:
+
+~~~text
+If a stock pre-ExitBootServices path can LoadImage/StartImage this exact PE,
+the file having originated outside the ABL FV is not itself the identified blocker.
+~~~
+
+It does not prove that a late post-security execution point is behaviorally
+identical to the normal pre-security ABL-FV launch.
+
+P4 status:
+
+~~~text
+PASS-IN-PRINCIPLE
+~~~
+
+The missing piece is a temporary stock carrier, not an observed LinuxLoader
+self-device-path dependency.
+
+# 26. Deployment decision after P0-P4
+
+Current route state:
+
+~~~text
+R1 Generic BDS Menu / ToolsFV Shell : CLOSED by Retail policy
+R2 OEMSetupApp                      : CLOSED, not configured
+R3 Vol- / removable FAT EFI         : CLOSED by P1/P2/P3
+R4 staged / memory EFI before normal LinuxLoader handoff : NEXT
+~~~
+
+R4 research must remain non-flashing and fail-closed. The next offline targets
+are existing stock paths that can already move an EFI image through RAM or an
+authenticated/staged FV before PlatBdsLaunchDefaultApps hands control to
+LinuxLoader.
+
+Do not reinterpret the P4 result as permission to patch or replace ABL, UEFI, or
+ToolsFV.
