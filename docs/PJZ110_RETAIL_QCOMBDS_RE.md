@@ -839,7 +839,7 @@ Size:
 2048 bytes
 
 SHA256:
-2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738
+17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931
 
 Machine:
 AArch64 (0xAA64)
@@ -860,16 +860,16 @@ Security/certificate directory:
 empty
 ~~~
 
-Exact disassembly shows only three indirect calls through `SystemTable->ConOut->OutputString`, followed by `EFI_SUCCESS`.
+Exact disassembly shows three indirect calls through `SystemTable->ConOut->OutputString`, one indirect call through `SystemTable->BootServices->Stall(5000000)`, then `EFI_SUCCESS`.
 
 The only embedded UTF-16 payload strings are:
 
 ~~~text
 PJZ110 EFI PROBE: EXECUTION OK
 READ-ONLY PROBE: no block/variable writes performed
-Returning to firmware boot manager.
+Holding for 5 seconds, then returning to firmware boot manager.
 ~~~
 
-There is no RuntimeServices pointer dereference, no BlockIo/DiskIo access, no file-write call, no SetVariable call, and no reset/provisioning call.
+There is no RuntimeServices pointer dereference, no BlockIo/DiskIo access, no file-write call, no SetVariable call, and no reset/provisioning call. The only BootServices action added for observability is the five-second `Stall()`.
 
-Therefore the probe is ready as the first future true-device payload once the user resumes live validation.
+Therefore the probe is ready as the first future true-device payload once the user resumes live validation. The five-second hold removes the earlier risk that the success banner could disappear too quickly to observe.
