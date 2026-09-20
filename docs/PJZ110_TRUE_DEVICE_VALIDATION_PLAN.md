@@ -3,18 +3,25 @@
 > [!IMPORTANT]
 > **No temporary EFI execution route is currently approved for live testing.**
 >
-> P0-P4 exact-current-build analysis retired both the generic BDS/ToolsFV route
-> and the later Vol-/removable-media route. In particular:
+> P0-P4 and R4-A→R4-D exact-current-build analysis retired the generic
+> BDS/ToolsFV route, the Vol-/removable-media route, and the analyzed stock
+> staged/memory candidates. Current closure:
 >
 > ~~~text
 > P1 USB Host auto-start : CLOSED
 > P2 DFP -> XHCI         : BLOCKED
 > P3 late removable BDS  : CLOSED
 > P4 LinuxLoader context : PASS-IN-PRINCIPLE
+>
+> R4-A stock mechanisms  : PASS-ENUMERATED
+> R4-B pre-LL carriers   : INTERNAL-ONLY
+> R4-C external source   : NONE-FOUND
+> R4-D stock carrier     : CLOSED
 > ~~~
 >
-> Do not perform the old Vol- + OTG / BOOTAA64.EFI procedure. Continue offline
-> with R4 staged/memory EFI research before normal LinuxLoader handoff.
+> Do not perform the old Vol- + OTG / BOOTAA64.EFI procedure and do not invent
+> a RAM/variable/flash workaround. Live EFI execution remains suspended until a
+> separately reviewed, reversible carrier is proven.
 >
 > The final fake-lock acceptance criteria in this document remain valid.
 
@@ -771,7 +778,7 @@ Separate milestone; not required to prove ABL fake-lock itself.
 
 ## 19. Next user action
 
-No additional true-device action is required for P0-P4.
+No additional true-device action is required after R4.
 
 Do not run:
 
@@ -779,13 +786,32 @@ Do not run:
 Vol- + OTG + BOOTAA64.EFI
 BDS/ToolsFV Shell experiments
 UEFI variable forcing
+manual RAM injection guesses
 boot-chain flashing
 ~~~
 
-The next work item is offline R4 analysis: identify an existing stock
-staged/memory EFI execution mechanism that runs before the normal
-DefaultBDSBootApp=LinuxLoader handoff.
+R4 has already closed the analyzed stock temporary paths:
 
-When such a carrier is proven, the first live payload remains the deterministic
-read-only BOOTAA64.EFI probe. Original LinuxLoader and fake-locked LinuxLoader
-remain later gates, in that order.
+~~~text
+R4-A = PASS-ENUMERATED
+R4-B = INTERNAL-ONLY
+R4-C = NONE-FOUND
+R4-D = CLOSED
+~~~
+
+The next milestone is a separate deployment design review, not another live
+reachability test. Any future carrier must be independently shown to be
+temporary/reversible, execute before the normal LinuxLoader handoff, and preserve
+the real unlocked/RPMB/KeyMaster/TEE state.
+
+If such a carrier is later proven, the execution order remains:
+
+~~~text
+read-only EFI probe
+  -> untouched original LinuxLoader
+  -> fake-locked LinuxLoader
+  -> raw /proc/bootconfig locked/green
+  -> independent real-BL-unlocked confirmation
+~~~
+
+See `docs/PJZ110_R4_STAGED_MEMORY_EFI_RE.md` for the R4 closure.
