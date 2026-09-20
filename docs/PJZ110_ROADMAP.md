@@ -12,13 +12,13 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M5 — Add binary-change allowlist and JSON patch manifest
 - [x] M6 — Add unit tests and dedicated GitHub Actions checks
 - [x] M7 — Block PJZ110 device-side `abl` / `efisp` writes and legacy ABL downgrade
-- [ ] M8 — Rework OPlus unlock-warning suppression for PJZ110
+- [x] M8 — Close OPlus unlock-warning path: VerifiedBoot security predicate identified; no safe UI-only patch proven
 - [x] M9 — Resolve legacy deployment mismatch: PJZ110 has no EFISP; stock Retail routes must be analyzed independently
 - [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
 - [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
-- [ ] M12 — True-device validation deferred until a separately reviewed reversible execution carrier is proven
-- [ ] M13 — True-device ABL fake-lock validation: bootconfig locked/green while real BL stays unlocked
-- [ ] M14 — OTA/profile lifecycle and regression fixtures
+- [ ] M12 — DEFERRED-NO-CARRIER: true-device validation requires a separately reviewed reversible execution carrier
+- [ ] M13 — DEFERRED-NO-CARRIER: true-device ABL fake-lock validation cannot start
+- [x] M14 — OTA/profile lifecycle and three-generation regression matrix
 - [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
 - [x] M16 — Analyze current imagefv/toolsfv/uefi and identify stock BDS -> ToolsFV -> Shell candidate
 - [x] M17 — Reverse exact Retail QcomBds entry paths; generic Shell route demoted, Vol- removable-media route confirmed
@@ -29,10 +29,10 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M22 — Finalize observable read-only probe with deterministic 5-second banner hold
 - [x] M23 — Close P0-P4: USB Host auto-start CLOSED, DFP->XHCI BLOCKED, late removable R3 CLOSED, LinuxLoader PASS-IN-PRINCIPLE
 - [x] M24 — Close R4-A→R4-D: no stock non-flashing pre-LinuxLoader EFI carrier identified; R4-D CLOSED
-- [ ] M25 — Separate deployment design review after stock-route closure; require a reversible A/B rollback plan before any persistent experiment
+- [x] M25 — Complete deployment design review for exact stock build: NO-GO, no surviving carrier
 - [x] M25-A — Close direct patched-ABL path: exact PT_LOAD is SHA384-covered and its v7 hash table is OPLUS ECDSA-P384 signed; stock route CLOSED-BY-PIL-AUTH
-- [ ] M25-B — Evaluate post-auth/pre-LinuxLoader substitution or already-authenticated carrier boundaries without modifying signed ABL bytes
-- [ ] M25-C — Define A/B recovery and rollback contract for the first surviving deployment candidate
+- [x] M25-B — Close exact stock post-auth/pre-LinuxLoader substitution and already-authenticated carrier paths: no external producer/caller identified
+- [x] M25-C — Define fail-closed A/B recovery contract template; unapplied because no candidate survives
 
 ## Current validation boundary
 
@@ -87,10 +87,32 @@ P-384 leaf certificate. Repacking the 7-byte fake-lock payload therefore changes
 signed metadata. XBL_CONFIG Unlock=1 is a post-authentication PIL/XPU unlock, not
 an Android bootloader-unlock bypass.
 
-M25-B is now the next research stage. It must look only for a post-authentication,
-pre-LinuxLoader substitution point or an already-authenticated carrier, while the
-same fail-closed safety boundary and future A/B rollback requirement remain in
-force.
+M25-B is closed for the exact current stock Retail/UFS build. The captured
+baseline is reproducible, and the identified candidates are
+`CLOSED-NO-STOCK-EXTERNAL-PRODUCER`. This conclusion is scoped to known stock
+paths and does not claim that unknown vulnerabilities cannot exist.
+
+M25-C now has a fail-closed A/B rollback contract template, but it cannot be
+completed or applied without a surviving deployment candidate. No live
+execution is authorized unless new evidence identifies both an external
+producer and a reversible carrier.
+
+M14 is complete with a read-only OTA/profile gate:
+`tools/pjz110_ota_profile_check.py` validates exact ABL profile selection,
+optional XBL/XBL_CONFIG hashes, LinuxLoader extraction, semantic patch
+postconditions, and the expected seven-byte output delta. The current
+`.501` package reproduces `PASS`; unknown and ambiguous profiles are refused.
+`tools/pjz110_profile_matrix.py` covers all three supported OTA generations
+and enforces unique artifact hashes plus the shared seven-byte contract.
+
+M8 first-pass `.501` research is now recorded in
+`docs/PJZ110_M8_UNLOCK_WARNING_RE.md`: the warning reference is unique, but
+the legacy global-state/CBZ suppression target is absent and the seven-byte
+fake-lock patch does not overlap the warning control region. No warning patch
+is authorized. The older exact LinuxLoader artifacts reproduce the same warning
+boundary across all three supported generations, and the source resolves to
+`QCOM_VERIFIEDBOOT_PROTOCOL.VBIsDeviceSecure`. M8 is closed as
+`CLOSED-NO-SAFE-UI-ONLY-PATCH`.
 
 See:
 
@@ -101,6 +123,11 @@ See:
 - `docs/PJZ110_M25A_ABL_PIL_AUTH_RE.md`
 - `profiles/PJZ110_16.0.10.501_m25a.json`
 - `tools/pjz110_m25a_check.py`
+- `docs/PJZ110_M25B_POST_AUTH_BOUNDARY_RE.md`
+- `profiles/PJZ110_16.0.10.501_m25b.json`
+- `tools/pjz110_m25b_check.py`
+- `docs/PJZ110_M25C_AB_ROLLBACK_CONTRACT.md`
+- `docs/PJZ110_M25_DEPLOYMENT_NO_GO.md`
 
 ## Safety contract
 

@@ -26,6 +26,28 @@ on:
       - 'profiles/PJZ110_16.0.10.501_m25a.json'
       - 'tests/test_pjz110_m25a_check.py'
       - 'tools/pjz110_m25a_check.py'
+      - 'profiles/PJZ110_16.0.10.501_m25b.json'
+      - 'tests/test_pjz110_m25b_check.py'
+      - 'tools/pjz110_m25b_check.py'
+      - 'tools/pjz110_extract_exact_modules.py'
+      - 'tools/pjz110_ota_profile_check.py'
+      - 'tests/test_pjz110_ota_profile_check.py'
+      - 'docs/PJZ110_OTA_PROFILE_LIFECYCLE.md'
+      - 'tools/pjz110_profile_matrix.py'
+      - 'tests/test_pjz110_profile_matrix.py'
+      - 'tools/pjz110_warning_research.py'
+      - 'tests/test_pjz110_warning_research.py'
+      - 'docs/PJZ110_M8_UNLOCK_WARNING_RE.md'
+      - 'profiles/PJZ110_16.0.10.501_m8.json'
+      - 'tools/pjz110_m8_warning_check.py'
+      - 'tests/test_pjz110_m8_warning_check.py'
+      - 'profiles/PJZ110_M8_WARNING_MATRIX.json'
+      - 'tests/test_pjz110_m8_warning_matrix.py'
+      - 'docs/PJZ110_M25B_POST_AUTH_BOUNDARY_RE.md'
+      - 'docs/PJZ110_M25C_AB_ROLLBACK_CONTRACT.md'
+      - 'docs/PJZ110_M25_DEPLOYMENT_NO_GO.md'
+      - 'docs/PJZ110_ROADMAP.md'
+      - 'README_PJZ110.md'
       - 'profiles/PJZ110_16.0.10.501.json'
       - 'profiles/PJZ110_16.0.3.501.json'
       - 'profiles/PJZ110_15.0.0.702.json'
@@ -56,6 +78,13 @@ jobs:
           python -m unittest discover -s tests -p 'test_pjz110_retail_path_check.py' -v
           python -m unittest discover -s tests -p 'test_pjz110_r4_check.py' -v
           python -m unittest discover -s tests -p 'test_pjz110_m25a_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_m25b_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_extract_exact_modules.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_ota_profile_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_profile_matrix.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_warning_research.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_m8_warning_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_m8_warning_matrix.py' -v
       - name: Python syntax check
         run: |
           python -m py_compile tools/pjz110_patch.py
@@ -66,6 +95,12 @@ jobs:
           python -m py_compile tools/pjz110_retail_path_check.py
           python -m py_compile tools/pjz110_r4_check.py
           python -m py_compile tools/pjz110_m25a_check.py
+          python -m py_compile tools/pjz110_m25b_check.py
+          python -m py_compile tools/pjz110_extract_exact_modules.py
+          python -m py_compile tools/pjz110_ota_profile_check.py
+          python -m py_compile tools/pjz110_profile_matrix.py
+          python -m py_compile tools/pjz110_warning_research.py
+          python -m py_compile tools/pjz110_m8_warning_check.py
       - name: Install LLVM linker
         run: |
           sudo apt-get update
