@@ -44,6 +44,13 @@ struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
     void *Mode;
 };
 
+typedef EFI_STATUS (EFIAPI *EFI_STALL)(UINTN Microseconds);
+
+typedef struct {
+    UINT8 Prefix[248];
+    EFI_STALL Stall;
+} EFI_BOOT_SERVICES;
+
 typedef struct {
     EFI_TABLE_HEADER Hdr;
     CHAR16 *FirmwareVendor;
@@ -55,7 +62,7 @@ typedef struct {
     EFI_HANDLE StandardErrorHandle;
     EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *StdErr;
     void *RuntimeServices;
-    void *BootServices;
+    EFI_BOOT_SERVICES *BootServices;
     UINTN NumberOfTableEntries;
     void *ConfigurationTable;
 } EFI_SYSTEM_TABLE;
@@ -64,10 +71,12 @@ _Static_assert(OFFSETOF(EFI_SYSTEM_TABLE, ConOut) == 64,
                "EFI_SYSTEM_TABLE layout mismatch");
 _Static_assert(OFFSETOF(EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL, OutputString) == 8,
                "ConOut layout mismatch");
+_Static_assert(OFFSETOF(EFI_BOOT_SERVICES, Stall) == 248,
+               "BootServices Stall offset mismatch");
 
 static CHAR16 banner1[] = L"PJZ110 EFI PROBE: EXECUTION OK\r\n";
 static CHAR16 banner2[] = L"READ-ONLY PROBE: no block/variable writes performed\r\n";
-static CHAR16 banner3[] = L"Returning to firmware boot manager.\r\n";
+static CHAR16 banner3[] = L"Holding for 5 seconds, then returning to firmware boot manager.\r\n";
 
 /* Force one base relocation so the PE can be relocated safely by UEFI. */
 static void *volatile relocation_anchor = (void *)banner1;
@@ -87,5 +96,10 @@ efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     SystemTable->ConOut->OutputString(SystemTable->ConOut, banner1);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, banner2);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, banner3);
+
+    if (SystemTable->BootServices != (void *)0 &&
+        SystemTable->BootServices->Stall != (void *)0) {
+        SystemTable->BootServices->Stall(5000000);
+    }
     return EFI_SUCCESS;
 }
