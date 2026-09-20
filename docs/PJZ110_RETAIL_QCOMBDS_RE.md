@@ -661,3 +661,215 @@ No partition modification is required to test these conditions.
 **Offline R3 status: PASS-CANDIDATE.**
 
 The next safe artifact should be a minimal read-only AArch64 `BOOTAA64.EFI` probe before using either original or fake-locked LinuxLoader.
+
+
+# 17. Volume-Down key survives the earlier hotkey read
+
+One remaining concern was whether the early `PlatformBdsDetectHotKey()` call would consume `SCAN_DOWN` before the later Retail `QcomBdsDetectBootHotKey()` call can use it.
+
+The same-version Pakala input stack resolves this.
+
+`ReadAnyKey(... RESET_AFTER_READ | NO_BLOCKING)` calls the SimpleTextInputEx `ReadKeyStrokeEx` method and then calls the input protocol `Reset` method.
+
+The Pakala `ButtonsDxe` reset path clears:
+
+~~~text
+key buffers
+pressed/released arrays
+matrix A/B
+isEfiKeyDetected
+numKeyRead
+~~~
+
+It does **not** release or mask the physical PMIC volume-button state.
+
+The physical polling path then reads the buttons again. If Volume Down remains physically held, the freshly-zeroed matrix changes back to pressed, and `ConvertEfiKeyCode()` emits a new `SCAN_DOWN` because `isEfiKeyDetected` was reset to false.
+
+The exact current `ButtonsDxe.efi` is:
+
+~~~text
+SHA256:
+931120fa700f135b70123f18833850e60856b2dba3772d89e9e9b74c2f3ef850
+
+Build path embedded in image:
+BOOT.MXF.2.5.1 / PakalaLAA / QcomPkg/Drivers/ButtonsDxe
+~~~
+
+The real-device Volume-Up experiment also proves that this same shipping input stack receives physical volume-key state during UEFI.
+
+Therefore the two-stage read sequence is:
+
+~~~text
+Volume Down held
+    ->
+early PlatformBdsDetectHotKey reads SCAN_DOWN
+    ->
+RESET_AFTER_READ clears software keypad state
+    ->
+physical Volume Down still held
+    ->
+next PollForKey observes a fresh pressed transition
+    ->
+late QcomBdsDetectBootHotKey reads SCAN_DOWN
+    ->
+BootFromRemovableMedia
+~~~
+
+**Offline conclusion:** the earlier development-menu hotkey read is not a structural blocker to the later Retail removable-media hotkey, provided the physical key remains asserted across both sampling points.
+
+This finding removes the last known input-consumption ambiguity from R3.
+
+# 18. Current Pakala USB host stack is present
+
+The exact current nested UEFI contains the complete pieces required for removable USB mass-storage boot:
+
+~~~text
+UsbConfigDxe
+XhciPciEmulation
+XhciDxe
+UsbBusDxe
+UsbMassStorageDxe
+UsbMsdDxe
+UsbPwrCtrlDxe
+UsbInitDxe
+~~~
+
+Exact hashes for the additional host-side modules:
+
+~~~text
+UsbPwrCtrlDxe:
+4812dae5ab9420102d2a04dedac5ff31a57e9edd6e9fc2f0808d36570badff6a
+
+UsbInitDxe:
+711ddb5f7da65c4b59c4b4fcf58416c0c07aa42191bf18a625d262603fcafbaf
+
+UsbMsdDxe:
+38a9ec1bdd4314bfd9a75eb361f5bd0dde340973219795723348c6997f41ddc5
+
+UsbKbDxe:
+b53cf66d601563ceabc775ea4d9f34245f11d6aadf0f7f4e68eda8b137b2f98e
+~~~
+
+The same-version Pakala `UsbConfigLib` explicitly supports the primary core in host mode:
+
+~~~text
+GetUsbHostConfig(USB_CORE_0_SOC) -> USB_CONFIG_SSUSB1
+GetSupportedMode(primary)        -> USB_DEVICE_MODE | USB_HOST_MODE
+~~~
+
+For a Type-C partner attach in DFP mode, its dual-role handler selects:
+
+~~~text
+USB_HOST_MODE_XHCI
+~~~
+
+and marks the core for host-controller start.
+
+The QcomBds removable path then calls `BdsConnectAllDrivers()` and enumerates removable SimpleFileSystem/BlockIo handles. Its USB boot-option logic is present in the exact current QcomBds.
+
+Thus the firmware does not lack a USB-host or mass-storage stack.
+
+The remaining USB uncertainty is strictly runtime/physical:
+
+~~~text
+Will the Type-C connection negotiate DFP/host mode early enough
+with the specific OTG adapter + FAT32 storage device?
+~~~
+
+That cannot be proven from the offline images alone.
+
+# 19. SecurityFlag decoding separates hardware Secure Boot from UEFI PE policy
+
+The exact current Pakala XBL_CONFIG has:
+
+~~~text
+SecurityFlag = 0xC4
+~~~
+
+The matching `BOOT.MXF.2.5.1` Qualcomm definitions are:
+
+~~~text
+0x001 SEC_BOOT_ENABLE_FLAG
+0x004 COMMON_MBN_LOAD_FLAG
+0x040 LOAD_SEC_APPS_FLAG
+0x080 KEYMASTER_LOAD_FLAG
+~~~
+
+Therefore:
+
+~~~text
+0xC4 = 0x80 | 0x40 | 0x04
+~~~
+
+and **does not contain** `SEC_BOOT_ENABLE_FLAG (0x01)`.
+
+This is consistent with the exact SecurityStub result: the Security2 architectural protocol exists, but there is no registered standard VerifyImage handler in the current image.
+
+This must not be confused with the earlier XBL runtime log:
+
+~~~text
+Secure Boot: On
+~~~
+
+That line describes the Qualcomm hardware/signing chain that authenticated the boot firmware itself. It does not, by itself, prove UEFI removable PE signature enforcement.
+
+For the current profiled build, the offline evidence distinguishes the two layers as:
+
+~~~text
+Qualcomm hardware boot-chain authentication: ON
+
+UEFI removable PE path:
+  Security2 protocol present
+  post-EndOfDxe defer gate passes
+  registered VerifyImage handlers = 0
+  SecurityFlag SEC_BOOT_ENABLE bit = 0
+~~~
+
+This materially strengthens the R3 PASS-CANDIDATE conclusion.
+
+# 20. Deterministic probe reproduced offline
+
+The project reference probe has now been independently rebuilt with the declared LLVM/LLD 17 toolchain and reproduced byte-for-byte:
+
+~~~text
+File:
+BOOTAA64.EFI
+
+Size:
+2048 bytes
+
+SHA256:
+2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738
+
+Machine:
+AArch64 (0xAA64)
+
+Subsystem:
+EFI application (10)
+
+Entry RVA:
+0x1000
+
+Relocation directory:
+present, RVA 0x3000, size 0x0C
+
+Import directory:
+empty
+
+Security/certificate directory:
+empty
+~~~
+
+Exact disassembly shows only three indirect calls through `SystemTable->ConOut->OutputString`, followed by `EFI_SUCCESS`.
+
+The only embedded UTF-16 payload strings are:
+
+~~~text
+PJZ110 EFI PROBE: EXECUTION OK
+READ-ONLY PROBE: no block/variable writes performed
+Returning to firmware boot manager.
+~~~
+
+There is no RuntimeServices pointer dereference, no BlockIo/DiskIo access, no file-write call, no SetVariable call, and no reset/provisioning call.
+
+Therefore the probe is ready as the first future true-device payload once the user resumes live validation.
