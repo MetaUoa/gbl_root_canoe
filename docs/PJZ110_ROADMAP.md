@@ -13,7 +13,7 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M6 — Add unit tests and dedicated GitHub Actions checks
 - [x] M7 — Block PJZ110 device-side `abl` / `efisp` writes and legacy ABL downgrade
 - [ ] M8 — Rework OPlus unlock-warning suppression for PJZ110
-- [ ] M9 — Identify the SM8750 GBL/EFISP loading path
+- [x] M9 — Resolve current SM8750 deployment path: legacy EFISP route absent; Retail Vol- removable EFI path replaces it
 - [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
 - [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
 - [ ] M12 — True-device validate the surviving Vol- -> removable FAT32 -> BOOTAA64.EFI path with the read-only probe
@@ -24,24 +24,41 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M17 — Reverse exact Retail QcomBds entry paths; generic Shell route demoted, Vol- removable-media route confirmed
 - [x] M18 — Close exact Retail Security2/DxeCore policy RE; removable EFI path reaches LoadImage with zero registered Security2 verify handlers
 - [x] M19 — Build deterministic read-only AArch64 BOOTAA64.EFI probe for future non-flashing validation
+- [x] M20 — Resolve dual hotkey-read timing; held Vol- re-detects after RESET_AFTER_READ
+- [x] M21 — Close Pakala USB-host capability offline; XHCI + mass-storage stack present, only physical role negotiation remains
+- [x] M22 — Finalize observable read-only probe with deterministic 5-second banner hold
 
-## Current hard blocker
+## Current validation boundary
 
-Three real PJZ110 boot-chain baselines have now been analyzed:
+Three real PJZ110 boot-chain baselines have been analyzed:
 
 - `PJZ110_15.0.0.702(CN01)`
 - `PJZ110_16.0.3.501(CN01)`
 - `PJZ110_16.0.10.501(CN01)`
 
-All three support the offline software-visible fake-lock patch, but **all three lack the legacy ASCII/UTF-16 `efisp` marker** used by the original direct EFISP loader patch.
+All three support the offline software-visible fake-lock patch and all three lack the legacy ASCII/UTF-16 `efisp` marker. The real PJZ110 partition map also has no `efisp` partition.
 
-The ColorOS 15 sample is especially important because its XBL is a genuinely older Pakala generation (`BOOT.MXF.2.5.1-00040.1-PAKALA-1.81269.25`), while the sampled ColorOS 16 builds use `00265`. Crossing this XBL generation boundary still did not reveal the legacy loader marker.
+For the current exact build, the legacy deployment question is resolved in practice: the usable stock Retail candidate is the independent removable-media path:
 
-Therefore M9 remains open, but its research question has changed: instead of searching another nearby OTA for the same marker, investigate an alternative PJZ110 chainload/deployment path or determine that PJZ110 never shipped the direct loader used by the original SM8845/SM8850 exploit.
+```text
+Vol- / SCAN_DOWN
+  -> QcomBds BootFromRemovableMedia
+  -> removable FAT32
+  -> \EFI\BOOT\BOOTAA64.EFI
+  -> DxeCore LoadImage
+  -> SecurityStub
+  -> StartImage
+```
 
-See `docs/PJZ110_THREE_GEN_DIFF.md`.
+Exact offline RE has closed the known software-policy gates: held Vol- survives the earlier input reset, Pakala USB-host/mass-storage drivers are present, the direct QcomBds boot path bypasses the previously suspected PlatformBdsPreLoadBootOption gate, the removable request occurs post-EndOfDxe, and the current SecurityStub has zero registered Security2 VerifyImage handlers.
 
-Current-device firmware-volume analysis: `docs/PJZ110_FV_ANALYSIS_16010501.md`.
+The remaining uncertainty is a true-device hardware/runtime question only: whether the USB-C connection negotiates DFP/host mode and enumerates the chosen FAT32 device early enough.
+
+No further boot-chain partition dump is currently required for R1.
+
+See:
+- `docs/PJZ110_RETAIL_QCOMBDS_RE.md`
+- `docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md`
 
 ## Safety contract
 
@@ -90,6 +107,6 @@ Final acceptance is defined in `docs/PJZ110_ABL_FAKE_LOCK_VALIDATION.md`.
 
 The staged live-device procedure is documented in `docs/PJZ110_TRUE_DEVICE_VALIDATION_PLAN.md`.
 
-The first live session is intentionally limited to `T0 -> T1 -> T2`: baseline capture, real-unlock confirmation, and non-flashing stock BDS/ToolsFV Shell reachability. External EFI execution, original LinuxLoader chainload, and fake-locked LinuxLoader validation are gated behind the preceding stages.
+The earlier BDS/ToolsFV Shell live stages are superseded. When live validation resumes, use `docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md`: first the deterministic read-only `BOOTAA64.EFI` probe, then untouched LinuxLoader, then fake-locked LinuxLoader.
 
 Retail QcomBds reverse-engineering report: `docs/PJZ110_RETAIL_QCOMBDS_RE.md`.
