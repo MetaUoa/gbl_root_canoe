@@ -45,6 +45,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_pjz110_1500702_patch.py' -v
           python -m unittest discover -s tests -p 'test_pjz110_fake_lock.py' -v
           python -m unittest discover -s tests -p 'test_pjz110_fv_analyze.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_retail_path_check.py' -v
       - name: Python syntax check
         run: |
           python -m py_compile tools/pjz110_patch.py
@@ -81,7 +82,13 @@ jobs:
           assert struct.unpack_from('<H',b,opt+0x44)[0] == 10
           rr,rs=struct.unpack_from('<II',b,opt+0x70+5*8)
           assert rr != 0 and rs != 0
+          import hashlib
+          expected='2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738'
+          actual=hashlib.sha256(b).hexdigest()
+          assert len(b) == 2048, len(b)
+          assert actual == expected, (actual, expected)
           print('probe PE validation: PASS')
+          print('reference probe SHA256:', actual)
           PY
       - name: Installer shell syntax check
         run: bash -n targets/magisk_module/module/customize.sh
