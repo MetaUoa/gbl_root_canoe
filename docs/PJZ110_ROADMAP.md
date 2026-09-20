@@ -30,6 +30,9 @@ Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(C
 - [x] M23 — Close P0-P4: USB Host auto-start CLOSED, DFP->XHCI BLOCKED, late removable R3 CLOSED, LinuxLoader PASS-IN-PRINCIPLE
 - [x] M24 — Close R4-A→R4-D: no stock non-flashing pre-LinuxLoader EFI carrier identified; R4-D CLOSED
 - [ ] M25 — Separate deployment design review after stock-route closure; require a reversible A/B rollback plan before any persistent experiment
+- [x] M25-A — Close direct patched-ABL path: exact PT_LOAD is SHA384-covered and its v7 hash table is OPLUS ECDSA-P384 signed; stock route CLOSED-BY-PIL-AUTH
+- [ ] M25-B — Evaluate post-auth/pre-LinuxLoader substitution or already-authenticated carrier boundaries without modifying signed ABL bytes
+- [ ] M25-C — Define A/B recovery and rollback contract for the first surviving deployment candidate
 
 ## Current validation boundary
 
@@ -56,6 +59,10 @@ R4-A stock RAM/FV/EFI search  PASS-ENUMERATED
 R4-B pre-LinuxLoader carriers INTERNAL-ONLY
 R4-C external pre-LL source   NONE-FOUND
 R4-D stock non-flash carrier  CLOSED
+
+M25-A direct patched ABL       CLOSED-BY-PIL-AUTH
+ABL primary PT_LOAD SHA384     VERIFIED
+v7 hash-table OEM signature    VERIFIED
 ~~~
 
 R4 found genuine internal staging machinery, including the UFS PIL ABL
@@ -73,9 +80,17 @@ Therefore no live EFI execution test is currently justified. The read-only
 `BOOTAA64.EFI` probe remains available only if a separately reviewed carrier is
 found later.
 
-The next deployment milestone is no longer another stock-route search. M25 is a
-separate design review with the same fail-closed safety boundary and explicit
-A/B rollback requirements before any persistent experiment.
+M25-A has now closed the straightforward direct-ABL candidate. The exact current
+LinuxLoader sits inside ABL's SHA384-covered PT_LOAD; the digest is present in the
+ELF-v7 hash table, and the hash-table region verifies against the embedded OPLUS
+P-384 leaf certificate. Repacking the 7-byte fake-lock payload therefore changes
+signed metadata. XBL_CONFIG Unlock=1 is a post-authentication PIL/XPU unlock, not
+an Android bootloader-unlock bypass.
+
+M25-B is now the next research stage. It must look only for a post-authentication,
+pre-LinuxLoader substitution point or an already-authenticated carrier, while the
+same fail-closed safety boundary and future A/B rollback requirement remain in
+force.
 
 See:
 
@@ -83,6 +98,9 @@ See:
 - `profiles/PJZ110_16.0.10.501_r4.json`
 - `tools/pjz110_r4_check.py`
 - `docs/PJZ110_RETAIL_QCOMBDS_RE.md`
+- `docs/PJZ110_M25A_ABL_PIL_AUTH_RE.md`
+- `profiles/PJZ110_16.0.10.501_m25a.json`
+- `tools/pjz110_m25a_check.py`
 
 ## Safety contract
 
