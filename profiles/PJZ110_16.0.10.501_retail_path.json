@@ -156,11 +156,22 @@
     }
   },
   "probe": {
-    "sha256": "2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738",
+    "sha256": "17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931",
     "size": 2048,
     "machine": 43620,
     "subsystem": 10,
     "entry_rva": 4096,
-    "requires_reloc": true
+    "requires_reloc": true,
+    "behavior": {
+      "output_lines": [
+        "PJZ110 EFI PROBE: EXECUTION OK",
+        "READ-ONLY PROBE: no block/variable writes performed",
+        "Holding for 5 seconds, then returning to firmware boot manager."
+      ],
+      "stall_microseconds": 5000000,
+      "writes_device_storage": false,
+      "writes_uefi_variables": false,
+      "resets_device": false
+    }
   }
 }
