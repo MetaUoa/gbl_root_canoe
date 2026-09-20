@@ -47,3 +47,29 @@ Only after offline Retail-path review is complete, place the probe at:
 ~~~
 
 on removable FAT32 media. Use this probe before attempting either original or fake-locked LinuxLoader.
+
+
+## Materialize the exact reference binary
+
+For true-device validation, the repository also stores the deterministic LLVM/LLD 17 reference image as text:
+
+~~~text
+BOOTAA64.EFI.b64
+~~~
+
+This avoids depending on the user's local compiler version.
+
+Windows PowerShell:
+
+~~~powershell
+pwsh -ExecutionPolicy Bypass -File .\tools\pjz110_probe\materialize_reference.ps1
+~~~
+
+The script decodes the reference image and refuses the output unless both invariants match:
+
+~~~text
+Size:   2048
+SHA256: 2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738
+~~~
+
+For live validation, prefer this exact reference binary over a locally rebuilt binary with a different LLVM version.
