@@ -2,17 +2,26 @@
 
 This directory contains the first true-device payload for the PJZ110 Retail removable-media path.
 
-It is intentionally **not** LinuxLoader and contains no partition/variable access.
+It is intentionally **not** LinuxLoader and contains no partition/variable write logic.
 
 ## Behavior
 
-`BOOTAA64.EFI` does only three things:
+`BOOTAA64.EFI` does only four things:
 
 1. obtains `SystemTable->ConOut`;
 2. prints three fixed UTF-16 strings;
-3. returns `EFI_SUCCESS` to the firmware boot manager.
+3. calls `BootServices->Stall(5000000)` so the result remains visible for five seconds;
+4. returns `EFI_SUCCESS` to the firmware boot manager.
 
-It does not call RuntimeServices `SetVariable`, BlockIo/DiskIo, file write APIs, partition protocols, reset/shutdown, or security/debug/provisioning services.
+The exact visible strings are:
+
+~~~text
+PJZ110 EFI PROBE: EXECUTION OK
+READ-ONLY PROBE: no block/variable writes performed
+Holding for 5 seconds, then returning to firmware boot manager.
+~~~
+
+It does not call RuntimeServices `SetVariable`, BlockIo/DiskIo, file-write APIs, partition protocols, reset/shutdown, security/debug/provisioning services, or any device-specific Qualcomm protocol.
 
 A base-relocation anchor is included so the PE contains a valid `.reloc` section.
 
@@ -30,28 +39,20 @@ Reference deterministic build:
 PE32+ AArch64
 Subsystem: EFI application
 Entry RVA: 0x1000
-.reloc: present
+.reloc: RVA 0x3000, size 0x0c
+Import directory: empty
+Security/certificate directory: empty
+Size: 2048
 
 SHA256:
-2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738
+17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931
 ~~~
 
-The build uses `/timestamp:0`. The reference hash was produced with LLVM/LLD 17.
-
-## Intended live use
-
-Only after offline Retail-path review is complete, place the probe at:
-
-~~~text
-\EFI\BOOT\BOOTAA64.EFI
-~~~
-
-on removable FAT32 media. Use this probe before attempting either original or fake-locked LinuxLoader.
-
+The reference binary was reproduced with LLVM/LLD 17 and `/timestamp:0`.
 
 ## Materialize the exact reference binary
 
-For true-device validation, the repository also stores the deterministic LLVM/LLD 17 reference image as text:
+For true-device validation, the repository stores the deterministic reference image as text:
 
 ~~~text
 BOOTAA64.EFI.b64
@@ -69,7 +70,21 @@ The script decodes the reference image and refuses the output unless both invari
 
 ~~~text
 Size:   2048
-SHA256: 2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738
+SHA256: 17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931
 ~~~
 
 For live validation, prefer this exact reference binary over a locally rebuilt binary with a different LLVM version.
+
+## Intended live use
+
+Only after offline Retail-path review is complete, place the exact reference probe at:
+
+~~~text
+\EFI\BOOT\BOOTAA64.EFI
+~~~
+
+on removable FAT32 media.
+
+The five-second stall is deliberate: a successful removable boot is visually distinguishable without requiring a Shell, keyboard, persistent log write, or EFI-variable write.
+
+Use this probe before attempting either original or fake-locked LinuxLoader.
