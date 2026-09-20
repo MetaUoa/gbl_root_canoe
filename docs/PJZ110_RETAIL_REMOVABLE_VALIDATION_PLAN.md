@@ -34,7 +34,7 @@ Reference deterministic binary:
 
 ~~~text
 BOOTAA64.EFI
-SHA256 2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738
+SHA256 17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931
 ~~~
 
 Place it on a FAT32 removable device at:
@@ -43,13 +43,13 @@ Place it on a FAT32 removable device at:
 \EFI\BOOT\BOOTAA64.EFI
 ~~~
 
-The probe only prints fixed text through UEFI ConOut and returns EFI_SUCCESS. It performs no partition, disk, file, UEFI-variable, reset, security, or provisioning write.
+The probe prints three fixed lines through UEFI ConOut, waits five seconds through BootServices.Stall(), then returns EFI_SUCCESS. It performs no partition, disk, file, UEFI-variable, reset, security, or provisioning write.
 
 The future true-device trigger is Vol- / SCAN_DOWN during the UEFI BDS sampling window. No Shell and no keyboard are required by this route.
 
 ### R1 pass
 
-Any direct observation that the probe ran, such as its fixed `PJZ110 EFI PROBE: EXECUTION OK` banner, is sufficient to prove external AArch64 EFI execution.
+Any direct observation that the probe ran, such as the fixed `PJZ110 EFI PROBE: EXECUTION OK` banner remaining visible during the five-second hold, is sufficient to prove external AArch64 EFI execution.
 
 After boot/recovery, also collect `/proc/bootloader_log` and search for:
 
@@ -116,3 +116,26 @@ Throughout R0-R3:
 - removable FAT media is the only payload carrier.
 
 Persistent deployment remains a separate milestone after R3.
+
+
+## Offline readiness
+
+The current exact firmware path has been taken as far as it can be without another live-device run:
+
+~~~text
+physical Volume Down
+  -> SCAN_DOWN re-detects after the earlier hotkey reset
+  -> QcomBds removable-media path
+  -> Pakala USB host/XHCI + USB mass-storage stack present
+  -> \EFI\BOOT\BOOTAA64.EFI
+  -> DxeCore LoadImage(BootPolicy=TRUE)
+  -> SecurityStub Security2
+  -> post-EndOfDxe third-party defer check: pass
+  -> registered Security2 VerifyImage handlers: 0
+  -> PE structural load
+  -> StartImage
+~~~
+
+Current XBL_CONFIG additionally has `SecurityFlag=0xC4`, which does not contain Qualcomm `SEC_BOOT_ENABLE_FLAG (0x01)`.
+
+The remaining uncertainty is runtime USB-C role negotiation / removable-media enumeration on the real handset. No further partition image is needed for Gate R1.
