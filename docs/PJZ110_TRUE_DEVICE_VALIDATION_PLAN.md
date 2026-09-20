@@ -1,15 +1,22 @@
 # PJZ110 ABL Fake-Lock — True-Device Validation Plan
 
 > [!IMPORTANT]
-> **Deployment stages T2-T5 in this document are superseded.**
+> **No temporary EFI execution route is currently approved for live testing.**
 >
-> Exact current-binary Retail RE has shown that the generic BDS Menu / ToolsFV Shell route is not the active shipping path. The surviving stock Retail candidate is:
+> P0-P4 exact-current-build analysis retired both the generic BDS/ToolsFV route
+> and the later Vol-/removable-media route. In particular:
 >
-> `Vol- / SCAN_DOWN -> QcomBds removable-media boot -> \\EFI\\BOOT\\BOOTAA64.EFI`.
+> ~~~text
+> P1 USB Host auto-start : CLOSED
+> P2 DFP -> XHCI         : BLOCKED
+> P3 late removable BDS  : CLOSED
+> P4 LinuxLoader context : PASS-IN-PRINCIPLE
+> ~~~
 >
-> Use **`docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md`** for all future live-device execution tests. The final ABL fake-lock acceptance criteria in this document remain valid.
+> Do not perform the old Vol- + OTG / BOOTAA64.EFI procedure. Continue offline
+> with R4 staged/memory EFI research before normal LinuxLoader handoff.
 >
-> Offline rationale and exact-binary evidence are in **`docs/PJZ110_RETAIL_QCOMBDS_RE.md`**.
+> The final fake-lock acceptance criteria in this document remain valid.
 
 Target: **OnePlus 13 China (PJZ110), SM8750/Pakala**
 
@@ -84,66 +91,49 @@ It does not modify Qualcomm DeviceInfo.is_unlocked, VBRwDeviceState, KeyMaster /
 
 ---
 
-## 3. Current firmware-volume findings
+## 3. Current execution-path findings
 
-Read-only dumps from the current device:
+The current boot-chain dumps remain useful, but the earlier interpretation has
+changed.
 
-| Partition | Size | SHA256 |
-| --- | ---: | --- |
-| imagefv_b | 2,097,152 | 432903b02644b404d3e19408e003ebea20e0acd416a0d486798d5056fa426451 |
-| toolsfv | 1,048,576 | c5da520b05b736875170248d2c80e5060edfb435c1e394acfb5489c5fef12eb7 |
-| uefi_b | 5,242,880 | 8d2670cb7790552c035bfa95896d561e7defb2414c8a6d538a3fdca2690879cc |
+Current UEFI contains QcomBds, SecurityStubDxe, VerifiedBootDxe,
+XhciPciEmulation, XhciDxe, UsbBusDxe, UsbMassStorageDxe, FAT support and the
+ToolsFV debug applications.
 
-Current imagefv_b is primarily OPlus battery/charging/thermal bitmap content and is not the primary execution candidate.
-
-Current stock toolsfv contains AArch64 UEFI applications including:
+However exact P0-P4 analysis establishes:
 
 ~~~text
-Cmd
-ListVars
-Menu
-Pgm
-RPMBProvision
-RPMBErase
-UEFINVErase
-DelBootVars
-UsbfnMsdApp
-SecurityToggleApp
-DebugPolicyToggleApp
-CapsuleApp
-Ebl
-Shell
+generic BDS Menu / ToolsFV Shell:
+  closed by Retail policy
+
+OEMSetupApp:
+  code exists, but no active OEMSetupApp is configured
+
+Vol- / removable FAT route:
+  closed for normal current LA boot
+
+reason A:
+  InitUsbControllerOnBoot == 0
+  -> DFP attach skips UsbStartController
+  -> no host-mode controller handle for XHCI binding
+
+reason B:
+  DefaultBDSBootApp = LinuxLoader
+  -> normal non-returning LinuxLoader launch occurs
+  -> before the late QcomBdsDetectBootHotKey / SCAN_DOWN check
 ~~~
 
-Current stock uefi_b contains QcomBds, SecurityStubDxe, VerifiedBootDxe, PartitionDxe, Fat, FvSimpleFileSystem, UFSDxe, OplusSecurityDxe, Ebl and related components.
+LinuxLoader itself is an AArch64 EFI application and no self-FV/LoadedImage
+device-path dependency was found. That result is PASS-IN-PRINCIPLE only; it does
+not supply an execution carrier.
 
-Its stock BDS_Menu.cfg includes:
+The next deployment problem is therefore R4:
 
 ~~~text
-Label = "Enter Shell"
-App = Shell
-Arg = "-nomap -nostartup"
+find a stock temporary staged/memory EFI path
+before PlatBdsLaunchDefaultApps -> LinuxLoader
+without writing boot-chain partitions
 ~~~
-
-Therefore the current best stock execution candidate is:
-
-~~~text
-stock signed UEFI
-        ->
-QcomBds
-        ->
-BDS Menu
-        ->
-ToolsFV
-        ->
-Shell
-        ->
-external EFI payload
-~~~
-
-This path is present in firmware, but retail reachability and external-image policy are not yet proven on the real device.
-
----
 
 ## 4. Global safety contract
 
@@ -338,6 +328,12 @@ INFO: UEFI NV tables are enabled as VOLATILE!
 This is runtime evidence from the actual PJZ110, not merely a static string hit.
 
 Implication: the generic Qualcomm BOOT.MXF physical-hotkey path that calls `LaunchBDSMenu()` only under `!RETAIL` should be treated as **low-probability** on this retail device. Do not spend repeated boot cycles brute-forcing key combinations. The next priority is read-only discovery of any OEMSetupApp / OsIndications / staged EFI route that remains reachable in retail mode.
+
+> [!CAUTION]
+> **ARCHIVED:** Sections T2-T5 below describe superseded experiments and must
+> not be executed on the current exact build. They are retained as historical
+> decision records only. Live validation resumes only after R4 produces a
+> separately reviewed temporary carrier.
 
 ## 8. Stage T2 — Stock BDS menu reachability
 
@@ -775,10 +771,21 @@ Separate milestone; not required to prove ABL fake-lock itself.
 
 ## 19. Next user action
 
-No additional live-device action is required while offline RE is being finalized.
+No additional true-device action is required for P0-P4.
 
-When live validation resumes, do **not** use the old T2/T3 Shell flow. Start with Gate R0/R1 in:
+Do not run:
 
-`docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md`
+~~~text
+Vol- + OTG + BOOTAA64.EFI
+BDS/ToolsFV Shell experiments
+UEFI variable forcing
+boot-chain flashing
+~~~
 
-The first payload is the read-only `BOOTAA64.EFI` probe, not LinuxLoader.
+The next work item is offline R4 analysis: identify an existing stock
+staged/memory EFI execution mechanism that runs before the normal
+DefaultBDSBootApp=LinuxLoader handoff.
+
+When such a carrier is proven, the first live payload remains the deterministic
+read-only BOOTAA64.EFI probe. Original LinuxLoader and fake-locked LinuxLoader
+remain later gates, in that order.
