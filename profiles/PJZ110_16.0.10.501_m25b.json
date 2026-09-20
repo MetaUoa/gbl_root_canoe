@@ -1,0 +1,34 @@
+{
+  "id": "pjz110-16.0.10.501-m25b-capture-v1",
+  "build": "PJZ110_16.0.10.501(CN01)",
+  "partitions": {
+    "abl_b": {"file": "abl_b.img", "size": 1048576, "sha256": "f8cd7ca3d5fafb4c97cf2d7ef6a32d934e7bb0d22b65d1f135c5ea1d3a294908", "payload_size": 278528, "payload_sha256": "c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed"},
+    "xbl_b": {"file": "xbl_b.img", "size": 3670016, "sha256": "8945db330996a41544e2e7e231e3594f961a373a8b16792271bed340f9d37d5d", "payload_size": 1191936, "payload_sha256": "fe5010f89c8da863032281c33a2a06f26ca799fa9f3eac61c81575176d504de2"},
+    "xbl_config_b": {"file": "xbl_config_b.img", "size": 409600, "sha256": "2a4e454012d62da56ac691185d6a1c9e7ff77499850766106a7202823a952aa4", "payload_size": 360448, "payload_sha256": "9760062003776a481495286d6c0233bda307100ac2e95cb7b23fcb5aa17bf64d"},
+    "uefi_b": {"file": "uefi_b.img", "size": 5242880, "sha256": "8d2670cb7790552c035bfa95896d561e7defb2414c8a6d538a3fdca2690879cc", "payload_size": 2797568, "payload_sha256": "40354232223dd2520eeb5195942df1885c5778d3a7757ce0efd42e7d70dc3eac"},
+    "imagefv_b": {"file": "imagefv_b.img", "size": 2097152, "sha256": "432903b02644b404d3e19408e003ebea20e0acd416a0d486798d5056fa426451", "payload_size": 114688, "payload_sha256": "ad0d99fff0dbb58ba74bc435a0847686bbb71dd5cb957f3ea2434f9bcc045cc0"},
+    "toolsfv": {"file": "toolsfv.img", "size": 1048576, "sha256": "c5da520b05b736875170248d2c80e5060edfb435c1e394acfb5489c5fef12eb7", "payload_size": 393216, "payload_sha256": "0b85bae6c22b600183b8894546edf711a90f47b7f52768fb2a835bcd90a3404c"}
+  },
+  "files": {},
+  "modules": {
+    "QcomBds": {"file": "QcomBds.efi", "source": "uefi.9E21FD93-9C72-4C15-8C4B-E77F1DB2D792.dec", "offset": "0x3b29a4", "size": 106496, "sha256": "426004d0eba512a0c33baf9f79e1c6ad723691e03a117f540dca79905dce1038"},
+    "PILDxe": {"file": "PILDxe.efi", "source": "uefi.D14C51ED-4F4D-2F2D-EAE4-77914692D046.dec", "offset": "0x2d965c", "size": 114688, "sha256": "57459a87bf34e9979fc66a8ecb09180f409170a8cef69be8347f14d7b4c654ab"},
+    "QcomChargerApp": {"file": "QcomChargerApp.efi", "source": "uefi.9E21FD93-9C72-4C15-8C4B-E77F1DB2D792.dec", "offset": "0x3cc9f8", "size": 98304, "sha256": "ce3f13c278346a91b85dbd55e1ea1c6835ee3a905a43755b2150768d8459e468"}
+  },
+  "runtime": {
+    "bootlog_required": ["Secure Boot: On", "Boot Interface: UFS", "Retail        : TRUE"],
+    "bootconfig_required": ["androidboot.vbmeta.device_state = \"unlocked\"", "androidboot.verifiedbootstate = \"orange\""],
+    "getprop_required": ["[ro.boot.vbmeta.device_state]: [locked]", "[ro.boot.verifiedbootstate]: [green]", "[ro.boot.flash.locked]: [1]"]
+  },
+  "candidate_boundaries": {
+    "post_auth_pre_linuxloader_substitution": "CLOSED-NO-STOCK-EXTERNAL-PRODUCER",
+    "already_authenticated_carrier": "CLOSED-NO-STOCK-EXTERNAL-PRODUCER",
+    "direct_patched_abl": "CLOSED-BY-PIL-AUTH",
+    "stock_nonflashing_carrier": "CLOSED-BY-R4"
+  },
+  "expected": {
+    "M25-B": "CLOSED-NO-STOCK-EXTERNAL-PRODUCER",
+    "live_execution": false,
+    "scope": "exact current Retail/UFS stock paths; does not claim that unknown vulnerabilities cannot exist"
+  }
+}
