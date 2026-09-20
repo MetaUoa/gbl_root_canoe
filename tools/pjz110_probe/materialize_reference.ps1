@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$expected = "2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738"
+$expected = "17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931"
 $source = Join-Path $PSScriptRoot "BOOTAA64.EFI.b64"
 if (-not (Test-Path $source)) {
     throw "Reference base64 payload not found: $source"
@@ -30,3 +30,4 @@ if ($hash -ne $expected) {
 Write-Host "Materialized: $out"
 Write-Host "Size: 2048"
 Write-Host "SHA256: $hash"
+Write-Host "Behavior: prints three fixed lines, waits 5 seconds with BootServices.Stall(), returns EFI_SUCCESS"
