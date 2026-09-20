@@ -83,7 +83,7 @@ jobs:
           rr,rs=struct.unpack_from('<II',b,opt+0x70+5*8)
           assert rr != 0 and rs != 0
           import hashlib
-          expected='2c7ef30661f8f09bfca56e481c84b1b18a8f4df9a92e2916fa75cb0d51047738'
+          expected='17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931'
           actual=hashlib.sha256(b).hexdigest()
           assert len(b) == 2048, len(b)
           assert actual == expected, (actual, expected)
@@ -93,6 +93,7 @@ jobs:
           ref=Path('tools/pjz110_probe/BOOTAA64.EFI.b64').read_text().strip()
           decoded=base64.b64decode(ref, validate=True)
           assert decoded == b
+          assert 'Holding for 5 seconds, then returning to firmware boot manager.'.encode('utf-16le') in b
           print('reference probe base64 validation: PASS')
           PY
       - name: Installer shell syntax check
