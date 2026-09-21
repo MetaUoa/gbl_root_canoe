@@ -1,0 +1,817 @@
+# PJZ110 ABL Fake-Lock — True-Device Validation Plan
+
+> [!IMPORTANT]
+> **No temporary EFI execution route is currently approved for live testing.**
+>
+> P0-P4 and R4-A→R4-D exact-current-build analysis retired the generic
+> BDS/ToolsFV route, the Vol-/removable-media route, and the analyzed stock
+> staged/memory candidates. Current closure:
+>
+> ~~~text
+> P1 USB Host auto-start : CLOSED
+> P2 DFP -> XHCI         : BLOCKED
+> P3 late removable BDS  : CLOSED
+> P4 LinuxLoader context : PASS-IN-PRINCIPLE
+>
+> R4-A stock mechanisms  : PASS-ENUMERATED
+> R4-B pre-LL carriers   : INTERNAL-ONLY
+> R4-C external source   : NONE-FOUND
+> R4-D stock carrier     : CLOSED
+> ~~~
+>
+> Do not perform the old Vol- + OTG / BOOTAA64.EFI procedure and do not invent
+> a RAM/variable/flash workaround. Live EFI execution remains suspended until a
+> separately reviewed, reversible carrier is proven.
+>
+> The final fake-lock acceptance criteria in this document remain valid.
+
+Target: **OnePlus 13 China (PJZ110), SM8750/Pakala**
+
+Primary build: **PJZ110_16.0.10.501(CN01)**
+
+Purpose: carry the completed offline ABL fake-lock implementation through staged, reversible, non-flashing-first true-device validation.
+
+Do not skip gates. Each stage proves exactly one new fact.
+
+---
+
+## 1. Final target
+
+Keep the real bootloader unlocked while making the ABL/LinuxLoader boot parameters report:
+
+~~~text
+real bootloader: UNLOCKED
+
+/proc/bootconfig:
+  androidboot.vbmeta.device_state = "locked"
+  androidboot.verifiedbootstate   = "green"
+~~~
+
+The following userspace-only condition is not a pass:
+
+~~~text
+/proc/bootconfig = unlocked / orange
+getprop          = locked / green
+~~~
+
+The final acceptance source is /proc/bootconfig plus an independent fastboot check that the real bootloader remains unlocked.
+
+---
+
+## 2. Frozen baseline
+
+Current device:
+
+~~~text
+Model: PJZ110
+SoC: SM8750 / Pakala
+Build: PJZ110_16.0.10.501(CN01)
+Active slot observed during collection: _b
+Real bootloader: unlocked
+~~~
+
+Current stock ABL/LinuxLoader baseline:
+
+~~~text
+ABL SHA256:
+c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed
+
+Original LinuxLoader SHA256:
+4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b
+
+Fake-locked LinuxLoader SHA256:
+34dbedd47b33acf4c131b5db927a5ef7cf9be214facbe6f98fe044dc448b61f0
+
+LinuxLoader size:
+0xC3000
+
+Changed bytes:
+7
+~~~
+
+The fake-lock patch changes only the Android-visible state selection:
+
+- unlocked operand -> existing locked string
+- verified state orange -> existing green string
+
+It does not modify Qualcomm DeviceInfo.is_unlocked, VBRwDeviceState, KeyMaster / TEE RootOfTrust, XBL / XBL_CONFIG, or partition tables.
+
+---
+
+## 3. Current execution-path findings
+
+The current boot-chain dumps remain useful, but the earlier interpretation has
+changed.
+
+Current UEFI contains QcomBds, SecurityStubDxe, VerifiedBootDxe,
+XhciPciEmulation, XhciDxe, UsbBusDxe, UsbMassStorageDxe, FAT support and the
+ToolsFV debug applications.
+
+However exact P0-P4 analysis establishes:
+
+~~~text
+generic BDS Menu / ToolsFV Shell:
+  closed by Retail policy
+
+OEMSetupApp:
+  code exists, but no active OEMSetupApp is configured
+
+Vol- / removable FAT route:
+  closed for normal current LA boot
+
+reason A:
+  InitUsbControllerOnBoot == 0
+  -> DFP attach skips UsbStartController
+  -> no host-mode controller handle for XHCI binding
+
+reason B:
+  DefaultBDSBootApp = LinuxLoader
+  -> normal non-returning LinuxLoader launch occurs
+  -> before the late QcomBdsDetectBootHotKey / SCAN_DOWN check
+~~~
+
+LinuxLoader itself is an AArch64 EFI application and no self-FV/LoadedImage
+device-path dependency was found. That result is PASS-IN-PRINCIPLE only; it does
+not supply an execution carrier.
+
+The next deployment problem is therefore R4:
+
+~~~text
+find a stock temporary staged/memory EFI path
+before PlatBdsLaunchDefaultApps -> LinuxLoader
+without writing boot-chain partitions
+~~~
+
+## 4. Global safety contract
+
+Until a stage explicitly changes this rule:
+
+**Do not write any boot-chain partition.**
+
+Do not run:
+
+~~~text
+fastboot flash abl ...
+fastboot flash uefi ...
+fastboot flash toolsfv ...
+fastboot flash imagefv ...
+fastboot flashing lock
+fastboot oem lock
+~~~
+
+Do not modify or upload device-unique security partitions such as:
+
+~~~text
+persist
+modemst1
+modemst2
+fsg
+fsc
+frp
+keystore
+devinfo
+oplusreserve1
+uefivarstore
+~~~
+
+Inside Qualcomm ToolsFV, do not execute these applications during reachability testing:
+
+~~~text
+RPMBProvision
+RPMBErase
+UEFINVErase
+DelBootVars
+Pgm
+SecurityToggleApp
+DebugPolicyToggleApp
+~~~
+
+They are not required for ABL fake-lock validation.
+
+---
+
+## 5. Required PC-side preparation
+
+Prepare:
+
+- Windows PC with current adb and fastboot
+- known-good USB cable
+- phone battery >= 60%
+- FAT32 USB flash drive + USB-C OTG adapter if available
+- current repo branch pjz110-sm8750
+- the offline fake-lock payload bundle
+
+Expected payload files:
+
+~~~text
+LinuxLoader.original.efi
+LinuxLoader.fake_locked.efi
+boot.efi
+manifest.json
+~~~
+
+Verify:
+
+~~~powershell
+Get-FileHash .\LinuxLoader.original.efi -Algorithm SHA256
+Get-FileHash .\LinuxLoader.fake_locked.efi -Algorithm SHA256
+~~~
+
+Expected:
+
+~~~text
+LinuxLoader.original.efi
+4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b
+
+LinuxLoader.fake_locked.efi
+34dbedd47b33acf4c131b5db927a5ef7cf9be214facbe6f98fe044dc448b61f0
+~~~
+
+If hashes differ: stop.
+
+---
+
+## 6. Stage T0 — Preflight and evidence capture
+
+Purpose: confirm the phone has not changed since the offline profile was built.
+
+Run:
+
+~~~powershell
+adb shell getprop ro.product.model
+adb shell getprop ro.build.display.id
+adb shell getprop ro.boot.slot_suffix
+adb shell cat /proc/bootconfig | Select-String "vbmeta.device_state|verifiedbootstate"
+~~~
+
+Expected baseline:
+
+~~~text
+PJZ110
+PJZ110_16.0.10.501(CN01)
+slot: _b   # or explicitly record if it changed
+
+androidboot.vbmeta.device_state = "unlocked"
+androidboot.verifiedbootstate   = "orange"
+~~~
+
+Capture the complete baseline:
+
+~~~powershell
+pwsh -ExecutionPolicy Bypass -File .\tools\pjz110_capture_validation.ps1
+~~~
+
+Expected result before ABL-level testing:
+
+~~~text
+FAIL
+userspace/property spoof only
+~~~
+
+That is the correct stock/unpatched baseline for this project.
+
+### T0 gate
+
+Proceed only if:
+
+- model is PJZ110
+- build is still PJZ110_16.0.10.501(CN01)
+- real bootloader is still unlocked
+- stock /proc/bootconfig remains unlocked/orange
+
+If the OTA/build changed, stop and create a new exact profile first.
+
+---
+
+## 7. Stage T1 — Confirm real bootloader state
+
+Reboot:
+
+~~~powershell
+adb reboot bootloader
+~~~
+
+Read only:
+
+~~~powershell
+fastboot getvar unlocked
+~~~
+
+If unsupported:
+
+~~~powershell
+fastboot oem device-info
+~~~
+
+Required condition:
+
+~~~text
+real bootloader = unlocked
+~~~
+
+Return to Android:
+
+~~~powershell
+fastboot reboot
+~~~
+
+### T1 gate
+
+If the bootloader is not actually unlocked, stop.
+
+---
+
+## 7.1 Runtime UEFI retail evidence
+
+Current-device `/proc/bootloader_log` confirms the real shipping firmware reports:
+
+~~~text
+UEFI Ver     : 6.0.260728.BOOT.MXF.2.5.1-00265-PAKALA-1.104700.16
+Retail       : TRUE
+OplusSecurityDxeEntryPoint. Status:Success
+INFO: UEFI NV tables are enabled as VOLATILE!
+~~~
+
+This is runtime evidence from the actual PJZ110, not merely a static string hit.
+
+Implication: the generic Qualcomm BOOT.MXF physical-hotkey path that calls `LaunchBDSMenu()` only under `!RETAIL` should be treated as **low-probability** on this retail device. Do not spend repeated boot cycles brute-forcing key combinations. The next priority is read-only discovery of any OEMSetupApp / OsIndications / staged EFI route that remains reachable in retail mode.
+
+> [!CAUTION]
+> **ARCHIVED:** Sections T2-T5 below describe superseded experiments and must
+> not be executed on the current exact build. They are retained as historical
+> decision records only. Live validation resumes only after R4 produces a
+> separately reviewed temporary carrier.
+
+## 8. Stage T2 — Stock BDS menu reachability
+
+Purpose: determine whether the stock retail PJZ110 exposes the already-present QcomBds menu.
+
+No EFI payload is executed in this stage.
+
+### T2-A — passive physical-key test
+
+Qualcomm BOOT.MXF reference code enters the BDS menu on a SCAN_HOME event before platform security is finalized. The exact PJZ110 retail input mapping is not yet proven.
+
+Try only reversible boot-time inputs.
+
+If a USB keyboard is recognized at this stage, test the Home key during early boot.
+
+Do not edit uefivarstore and do not repeatedly change UEFI variables.
+
+Collect photos/video of any:
+
+- Qcom BDS menu
+- text console
+- Shell/EBL menu
+- new boot warning/error
+
+If Android boots normally, record:
+
+~~~text
+T2 physical-key route: NOT REACHED
+~~~
+
+That is a valid result.
+
+### T2-B — fastboot command-surface observation
+
+Enter fastboot and collect only read-only/help output.
+
+Do not invoke an undocumented OEM action merely because its name appears plausible.
+
+The offline project should first confirm whether the exact current ABL contains a staged EFI command such as a boot-efi family command. Only after that should an exact live command be added to this plan.
+
+### T2 gate
+
+Success:
+
+~~~text
+BDS menu or stock ToolsFV Shell/EBL becomes reachable
+~~~
+
+Failure:
+
+~~~text
+retail gate prevents BDS/Shell reachability
+~~~
+
+If T2 fails, stop true-device testing and return to offline RE. Do not compensate by flashing modified UEFI/ToolsFV.
+
+---
+
+## 9. Stage T3 — Enter stock ToolsFV Shell
+
+Only perform T3 after T2 exposes the stock menu.
+
+Choose:
+
+~~~text
+Enter Shell
+~~~
+
+Expected stock invocation from extracted configuration:
+
+~~~text
+Shell -nomap -nostartup
+~~~
+
+Inside Shell, run only read-only discovery commands:
+
+~~~text
+help
+map
+map -r
+devices
+drivers
+~~~
+
+Record:
+
+- Shell version/banner
+- whether filesystem mappings fs0:, fs1:, etc. appear
+- whether a FAT32 USB drive is detected
+- whether USB keyboard input works
+
+Do not execute ToolsFV provisioning/security utilities.
+
+### T3 gate
+
+Success:
+
+~~~text
+stock Shell is interactive
+and
+a removable FAT32 filesystem is visible
+~~~
+
+If Shell is reachable but no external FAT filesystem is visible, stop and investigate USB/storage enumeration offline. Do not write an internal boot partition as a shortcut.
+
+---
+
+## 10. Stage T4 — External EFI policy probe
+
+Purpose: answer one question:
+
+> Can stock PJZ110 Shell load and start an external AArch64 EFI application?
+
+Do not use the patched LinuxLoader as the first test.
+
+Prepare a minimal pjz110_probe.efi that only:
+
+1. prints a fixed identifier;
+2. prints selected EFI environment information;
+3. waits for a key;
+4. returns to Shell;
+5. performs no block writes and no variable writes.
+
+Recommended USB layout:
+
+~~~text
+\PJZ110\pjz110_probe.efi
+\PJZ110\LinuxLoader.original.efi
+\PJZ110\LinuxLoader.fake_locked.efi
+~~~
+
+From Shell:
+
+~~~text
+map -r
+fsN:
+cd PJZ110
+ls
+pjz110_probe.efi
+~~~
+
+### T4 result: PASS
+
+Probe prints its banner and returns to Shell.
+
+Meaning:
+
+~~~text
+external AArch64 EFI execution is allowed on this unlocked PJZ110 path
+~~~
+
+Proceed to T5.
+
+### T4 result: SECURITY BLOCK
+
+Examples:
+
+~~~text
+Security Violation
+Access Denied
+Load Error
+authentication failure
+~~~
+
+Record the exact status and stop.
+
+Do not run SecurityToggleApp or modify security variables to bypass this result.
+
+### T4 result: FILESYSTEM/USB FAILURE
+
+Shell cannot see the USB device.
+
+Stop and investigate enumeration. Do not copy the test image into an internal boot-chain partition.
+
+---
+
+## 11. Stage T5 — Chainload the untouched original LinuxLoader
+
+Purpose: validate the execution environment before using any fake-lock modification.
+
+Run the exact original profiled loader from removable media:
+
+~~~text
+LinuxLoader.original.efi
+~~~
+
+### T5-A — Android boots normally
+
+After boot:
+
+~~~powershell
+adb shell cat /proc/bootconfig | Select-String "vbmeta.device_state|verifiedbootstate"
+~~~
+
+Expected:
+
+~~~text
+androidboot.vbmeta.device_state = "unlocked"
+androidboot.verifiedbootstate   = "orange"
+~~~
+
+This proves:
+
+~~~text
+stock UEFI -> Shell -> original LinuxLoader -> Android
+~~~
+
+Proceed to T6.
+
+### T5-B — loader returns to Shell
+
+Capture exact status/output and stop for analysis.
+
+### T5-C — reboot/hang
+
+Do not write anything.
+
+Recover with a normal forced reboot/power cycle and record what happened.
+
+A hang here means the Shell execution context is not equivalent to the environment expected by LinuxLoader. Do not proceed to the patched image until understood.
+
+---
+
+## 12. Stage T6 — ABL fake-lock true-device test
+
+Only run after T5 succeeds.
+
+Execute:
+
+~~~text
+LinuxLoader.fake_locked.efi
+~~~
+
+or the identical prepared alias:
+
+~~~text
+boot.efi
+~~~
+
+After Android starts, immediately capture:
+
+~~~powershell
+adb shell cat /proc/bootconfig > bootconfig-after-fakelock.txt
+adb shell cat /proc/cmdline > cmdline-after-fakelock.txt
+adb shell getprop > getprop-after-fakelock.txt
+~~~
+
+Run project validator:
+
+~~~powershell
+pwsh -ExecutionPolicy Bypass -File .\tools\pjz110_capture_validation.ps1
+~~~
+
+### Required ABL-level PASS
+
+~~~text
+/proc/bootconfig:
+androidboot.vbmeta.device_state = "locked"
+androidboot.verifiedbootstate   = "green"
+~~~
+
+Userspace getprop is secondary evidence only.
+
+---
+
+## 13. Stage T7 — Confirm real bootloader stayed unlocked
+
+After successful T6:
+
+~~~powershell
+adb reboot bootloader
+fastboot getvar unlocked
+~~~
+
+or:
+
+~~~powershell
+fastboot oem device-info
+~~~
+
+Required:
+
+~~~text
+real bootloader = unlocked
+~~~
+
+Then:
+
+~~~powershell
+fastboot reboot
+~~~
+
+### Final core acceptance
+
+Only mark ABL fake-lock core complete when both are true:
+
+~~~text
+real bootloader = UNLOCKED
+
+/proc/bootconfig:
+device_state = locked
+verifiedbootstate = green
+~~~
+
+---
+
+## 14. Stage T8 — OPlus unlock-warning follow-up
+
+This is deliberately after the core fake-lock test.
+
+The current 7-byte patch does not claim to suppress every OPlus visual unlock-warning path.
+
+If T6/T7 pass but an unlock warning still appears:
+
+1. capture the exact warning behavior;
+2. use the existing OPlus warning string as semantic anchor;
+3. implement a separate guarded patch;
+4. rerun the original-vs-patched chainload regression.
+
+Do not mix warning suppression into the first ABL-state validation.
+
+---
+
+## 15. Stage T9 — Persistent deployment decision
+
+Persistent installation is not part of the first true-device validation.
+
+Only design it after T4-T7 pass.
+
+Preferred order:
+
+1. reuse a stock staged/non-flashing EFI mechanism if one exists;
+2. keep the original signed boot chain intact;
+3. preserve A/B rollback;
+4. require exact firmware/profile hashes;
+5. fail closed after OTA changes.
+
+Do not choose direct ABL/UEFI/ToolsFV flashing merely because temporary chainload works.
+
+Persistent deployment gets a separate design review and rollback plan.
+
+---
+
+## 16. Failure decision tree
+
+~~~text
+T2 cannot reach BDS/Shell
+    -> STOP
+    -> offline RE of retail gating / staged fastboot EFI routes
+
+T3 reaches Shell but USB/FAT absent
+    -> STOP
+    -> storage/USB enumeration analysis
+
+T4 external probe rejected
+    -> STOP
+    -> identify Security2 / PE authentication policy
+    -> do not toggle security state
+
+T4 probe passes but T5 original LinuxLoader fails
+    -> STOP
+    -> analyze LinuxLoader execution-context assumptions
+
+T5 original LinuxLoader boots Android
+    -> execute T6 patched LinuxLoader
+
+T6 boots but bootconfig still unlocked/orange
+    -> fake-lock patch did not execute or wrong loader was invoked
+    -> collect hashes and runtime evidence
+
+T6 bootconfig locked/green + T7 real BL unlocked
+    -> CORE ABL FAKE-LOCK PASS
+~~~
+
+---
+
+## 17. Evidence bundle for every true-device run
+
+Create one folder per attempt:
+
+~~~text
+pjz110-run-YYYYMMDD-HHMMSS/
+~~~
+
+Keep:
+
+~~~text
+notes.txt
+phone-screen photos/video
+shell-output.txt or photos
+bootconfig.txt
+cmdline.txt
+getprop.txt
+fastboot-unlocked.txt
+payload-sha256.txt
+~~~
+
+Record:
+
+- build number
+- active slot
+- exact payload filename
+- payload SHA256
+- exact stage being tested
+- result
+- recovery action if any
+
+Never rely on memory when comparing repeated boot-chain experiments.
+
+---
+
+## 18. Definition of done
+
+### Core ABL fake-lock
+
+Complete when:
+
+- [ ] stock BDS/EFI execution path is reachable
+- [ ] harmless external EFI probe executes
+- [ ] untouched original LinuxLoader chainloads successfully
+- [ ] fake-locked LinuxLoader chainloads successfully
+- [ ] /proc/bootconfig reports locked/green
+- [ ] fastboot still reports real bootloader unlocked
+- [ ] no boot-chain partition write was required
+
+### Optional visual cleanup
+
+- [ ] OPlus unlock warning suppressed without changing the real unlock bit
+
+### Persistent deployment
+
+Separate milestone; not required to prove ABL fake-lock itself.
+
+---
+
+## 19. Next user action
+
+No additional true-device action is required after R4.
+
+Do not run:
+
+~~~text
+Vol- + OTG + BOOTAA64.EFI
+BDS/ToolsFV Shell experiments
+UEFI variable forcing
+manual RAM injection guesses
+boot-chain flashing
+~~~
+
+R4 has already closed the analyzed stock temporary paths:
+
+~~~text
+R4-A = PASS-ENUMERATED
+R4-B = INTERNAL-ONLY
+R4-C = NONE-FOUND
+R4-D = CLOSED
+~~~
+
+The next milestone is a separate deployment design review, not another live
+reachability test. Any future carrier must be independently shown to be
+temporary/reversible, execute before the normal LinuxLoader handoff, and preserve
+the real unlocked/RPMB/KeyMaster/TEE state.
+
+If such a carrier is later proven, the execution order remains:
+
+~~~text
+read-only EFI probe
+  -> untouched original LinuxLoader
+  -> fake-locked LinuxLoader
+  -> raw /proc/bootconfig locked/green
+  -> independent real-BL-unlocked confirmation
+~~~
+
+See `docs/PJZ110_R4_STAGED_MEMORY_EFI_RE.md` for the R4 closure.

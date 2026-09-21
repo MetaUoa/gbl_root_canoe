@@ -1,0 +1,136 @@
+{
+  "id": "pjz110-16.0.10.501-m25a-abl-pil-auth",
+  "device": "OnePlus 13",
+  "model": "PJZ110",
+  "platform": "SM8750",
+  "soc_codename": "Pakala",
+  "build": "PJZ110_16.0.10.501(CN01)",
+  "analysis_revision": "m25a-abl-pil-auth-closure-v1",
+  "abl": {
+    "size": 278528,
+    "sha256": "c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed",
+    "elf": {
+      "type": 2,
+      "machine": 40,
+      "entry": "0x9fa00000",
+      "phoff": "0x34",
+      "phentsize": 32,
+      "phnum": 3,
+      "phdrs": [
+        {"type": 0, "offset": "0x0", "vaddr": "0x0", "paddr": "0x0", "filesz": "0x94", "memsz": "0x0", "flags": "0x07000000", "align": "0x0"},
+        {"type": 1, "offset": "0x1000", "vaddr": "0x9fa00000", "paddr": "0x9fa00000", "filesz": "0x42000", "memsz": "0x42000", "flags": "0x7", "align": "0x1000"},
+        {"type": 0, "offset": "0x43000", "vaddr": "0x0", "paddr": "0x0", "filesz": "0xf38", "memsz": "0xf38", "flags": "0x02000000", "align": "0x1000"}
+      ]
+    },
+    "hash_segment": {
+      "offset": "0x43000",
+      "size": "0xf38",
+      "header_hash_end": "0x94",
+      "hash_table_offset": "0x120",
+      "header": {
+        "reserved": 0,
+        "version": 7,
+        "common_metadata_size": 24,
+        "qti_metadata_size": 0,
+        "oem_metadata_size": 224,
+        "hash_table_size": 144,
+        "qti_signature_size": 0,
+        "qti_certificate_chain_size": 0,
+        "oem_signature_size": 104,
+        "oem_certificate_chain_size": 3360
+      },
+      "header_sha384": "12f998e42040b0f71e8a428b1e36ddef56e08b71c170ebf37ae9e996d58f45f74b6589aed71cc3299f76df659e0f6140",
+      "load_sha384": "bf3783c6ca594f014528fe541b72f7ba9f71ee298fad91f631d190639aec3a1e2967795cdc4645f07a26b65528498f7d",
+      "mutation_probe_offset_in_load": "0x78",
+      "signed_region_offset": "0x43000",
+      "signed_region_size": "0x1b0",
+      "signed_region_sha384": "0156478f74e72b4ed1cbd1e42750e2179b7a6690bce42ac2b37a6bee9356fc4a2f0a3a2c6dbf48fefd1a91538cd8998d",
+      "oem_signature_offset": "0x431b0",
+      "oem_signature_slot_size": 104,
+      "oem_signature_der_size": 103,
+      "certificates": [
+        {
+          "offset": "0x43218",
+          "size": 656,
+          "sha256": "6bd69f80b3b896d213f5bf30766b3afd75841fc30598e36ee24bac5e38433730",
+          "subject_cn": "OPLUS SM8750 Attestation"
+        },
+        {
+          "offset": "0x434a8",
+          "size": 668,
+          "sha256": "b830588727064a2adaf94b9e9a4504d3151582621368d181a878f4aca60b1bed",
+          "subject_cn": "OPLUS Attestation CA"
+        },
+        {
+          "offset": "0x43744",
+          "size": 631,
+          "sha256": "35609a6703e2f41a6ffdac2e362c15e2ee318b7bf561da0770710941d84bdd89",
+          "subject_cn": "OPLUS ROOT CA 1"
+        }
+      ]
+    },
+    "lzma": {
+      "offset": "0x1078",
+      "compressed_size": "0x41233",
+      "decompressed_size": "0xc30c8",
+      "pe_offset": "0xb8"
+    }
+  },
+  "linuxloader": {
+    "size": 798720,
+    "original_sha256": "4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b",
+    "fake_sha256": "34dbedd47b33acf4c131b5db927a5ef7cf9be214facbe6f98fe044dc448b61f0",
+    "diff_offsets": [
+      "0x4af3c",
+      "0x4af3d",
+      "0x4af3f",
+      "0x4af41",
+      "0x4af42",
+      "0xa2ca8",
+      "0xa2ca9"
+    ]
+  },
+  "xbl_config": {
+    "size": 360448,
+    "sha256": "9760062003776a481495286d6c0233bda307100ac2e95cb7b23fcb5aa17bf64d",
+    "dtb_offset": "0x8708",
+    "abl_cfg_path": "/soc/pil/pil_images/ABL_CFG",
+    "abl_cfg_required": {
+      "Version": 5,
+      "Type": 1,
+      "FwName": "ABL",
+      "SubsysID": 21,
+      "Unlock": 1
+    }
+  },
+  "runtime": {
+    "required_strings": [
+      "Secure Boot: On",
+      "PROD Mode     : TRUE",
+      "Retail        : TRUE",
+      "lock_state:0"
+    ]
+  },
+  "source_reference": {
+    "qualcomm_repo": "mobstyle10-arch/BOOT.MXF.2.5.1",
+    "pakala_security_profile": {
+      "ABL_authenticator_oem": "TZ-PIL",
+      "sw_id": "0x1C",
+      "image_format": "ELF-V7",
+      "segment_hash": "SHA384",
+      "signature": "ECDSA384/SHA384"
+    },
+    "pildxe_order": [
+      "CopyMetaDataFromLoadedElf includes ELF header + program headers + hash segment",
+      "TZ_PIL_INIT_ID validates metadata",
+      "TZ_PIL_MEM_ID assigns authenticated region",
+      "TZ_PIL_AUTH_RESET_ID authenticates/reset subsystem",
+      "TZ_PIL_UNLOCK_XPU_ID occurs only afterward when Unlock=1"
+    ]
+  },
+  "expected": {
+    "M25-A": "PASS-CLOSED-DIRECT-ABL",
+    "direct_patched_abl_stock_auth": "CLOSED-BY-PIL-AUTH",
+    "interpretation": "The exact fake-lock change is inside the SHA384-covered ABL LOAD segment. Repacking it changes covered bytes. Recomputing the segment digest changes the signed v7 hash-table region, so the existing OPLUS ECDSA-P384 signature cannot remain valid without a platform signing key or a separately proven authentication bypass."
+  }
+}

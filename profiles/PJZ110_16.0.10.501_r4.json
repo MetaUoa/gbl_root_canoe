@@ -1,0 +1,206 @@
+{
+  "id": "pjz110-16.0.10.501-r4",
+  "device": "OnePlus 13",
+  "model": "PJZ110",
+  "platform": "SM8750",
+  "soc_codename": "Pakala",
+  "build": "PJZ110_16.0.10.501(CN01)",
+  "analysis_revision": "r4-a-d-offline-closure-v1",
+  "artifacts": {
+    "abl": {
+      "size": 278528,
+      "sha256": "c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed"
+    },
+    "uefi": {
+      "size": 5242880,
+      "sha256": "8d2670cb7790552c035bfa95896d561e7defb2414c8a6d538a3fdca2690879cc"
+    },
+    "xbl_config": {
+      "size": 360448,
+      "sha256": "9760062003776a481495286d6c0233bda307100ac2e95cb7b23fcb5aa17bf64d"
+    }
+  },
+  "modules": {
+    "QcomBds": {
+      "size": 106496,
+      "sha256": "426004d0eba512a0c33baf9f79e1c6ad723691e03a117f540dca79905dce1038"
+    },
+    "PILDxe": {
+      "size": 114688,
+      "sha256": "57459a87bf34e9979fc66a8ecb09180f409170a8cef69be8347f14d7b4c654ab"
+    },
+    "QcomChargerApp": {
+      "size": 98304,
+      "sha256": "ce3f13c278346a91b85dbd55e1ea1c6835ee3a905a43755b2150768d8459e468"
+    }
+  },
+  "linuxloader": {
+    "size": 798720,
+    "sha256": "4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b",
+    "machine": 43620,
+    "subsystem": 10,
+    "entry_rva": 4096,
+    "required_ascii": [
+      "Fastboot boot command is not available in locked device",
+      "Invalid Boot image Header",
+      "Failed to load/authenticate boot image: %r",
+      "BootImage is Incomplete",
+      "BootImage: Size is greater than max download size",
+      "LoadImageAndAuth",
+      "max-download-size",
+      "kernel",
+      "uefi"
+    ],
+    "forbidden_ascii": [
+      "boot-efi",
+      "reboot-uefi",
+      "oem shell"
+    ],
+    "exact_u32_rva": {
+      "0x2fffc": "0xb0000280",
+      "0x30000": "0x912fb800",
+      "0x30004": "0xb00002c1",
+      "0x30008": "0x910f2821",
+      "0x3000c": "0x9400105b",
+      "0x32d18": "0xd00002c0",
+      "0x32d1c": "0x9110ac00",
+      "0x32d34": "0xd0000220",
+      "0x32d38": "0x91186400",
+      "0x32ddc": "0xd0000242",
+      "0x32de0": "0x911c7842",
+      "0x32e00": "0x90000260",
+      "0x32e04": "0x91026800",
+      "0x32e20": "0xd00002c0",
+      "0x32e24": "0x91111400"
+    },
+    "string_rva": {
+      "kernel": "0x80bee",
+      "uefi": "0x893ca",
+      "Invalid Boot image Header": "0x8c42b",
+      "Fastboot boot command is not available in locked device": "0x78619",
+      "Failed to load/authenticate boot image: %r": "0x7c71e",
+      "BootImage is Incomplete": "0x7e09a",
+      "BootImage: Size is greater than max download size": "0x8c445"
+    },
+    "abl_lzma_offset": "0x1078",
+    "abl_decompressed_pe_offset": "0xb8"
+  },
+  "xbl_config": {
+    "dtb_offset": "0x8708",
+    "uefi_required": {
+      "/sw/uefi/int_param": {
+        "EnableShell": 1,
+        "SecurityFlag": 196,
+        "DetectRetailUserAttentionHotkey": 0,
+        "AllowNonPersistentVarsInRetail": 1
+      },
+      "/sw/uefi/str_param": {
+        "PlatConfigFileName": "uefiplatLA.cfg",
+        "OsTypeString": "LA",
+        "DefaultChargerApp": "QcomChargerApp",
+        "DefaultBDSBootApp": "LinuxLoader"
+      }
+    },
+    "uefi_absent": {
+      "/sw/uefi/int_param": [
+        "LoadAutoImageInPILFlag"
+      ],
+      "/sw/uefi": [
+        "OEMSetupApp"
+      ]
+    },
+    "pil_path": "/soc/pil",
+    "pil_required": {
+      "RetailImages_contains": "ABL",
+      "AutoStartImages_raw_hex": "00"
+    },
+    "abl_cfg_path": "/soc/pil/pil_images/ABL_CFG",
+    "abl_cfg_required": {
+      "Version": 5,
+      "Type": 1,
+      "FwName_ascii": "ABL",
+      "PartiLabel_ascii": "",
+      "PartiRootGuid_hex": "00000000000000000000000000000000",
+      "PartiGuid_hex": "bd6928a14ce0a0384f3a1495e3eddffb",
+      "ImagePath_ascii": "",
+      "SubsysID": 21,
+      "ResvRegionStart": 0,
+      "ResvRegionSize": 0,
+      "ImageLoadInfo": 0,
+      "Unlock": 1,
+      "OverrideElfAddr": 0,
+      "ProxyGuid_hex": "00000000000000000000000000000000",
+      "BackupPartiLabel_ascii": "",
+      "BackupPartiRootGuid_hex": "00000000000000000000000000000000",
+      "BackupPartiGuid_hex": "00000000000000000000000000000000",
+      "PreImage_ascii": "",
+      "PostImage_ascii": "",
+      "MediaType_ascii": "",
+      "IsFileCompressed": 0,
+      "NonFatal": 0
+    },
+    "memory_regions": {
+      "required": {
+        "/soc/memorymap/memory@A7AD9000": {
+          "mem-label_ascii": "FV_Region",
+          "reg_hex": "00000000a7ad90000000000000400000"
+        }
+      },
+      "forbidden_mem_labels": [
+        "ABOOT FV",
+        "TestFV_Region"
+      ]
+    }
+  },
+  "module_strings": {
+    "QcomBds": {
+      "required_ascii": [
+        "DefaultBDSBootApp",
+        "DefaultChargerApp",
+        "LoadAutoImageInPILFlag",
+        "FV_Region",
+        "toolsfv",
+        "Boot Device        : Flashless",
+        "Boot Device        : Network"
+      ]
+    },
+    "PILDxe": {
+      "required_ascii": [
+        "Overriding PIL cfg by caller",
+        "ImagePath",
+        "PartiGuid",
+        "BackupPartiGuid",
+        "AutoStartImages",
+        "RetailImages",
+        "pil-%s ImagePath is required as MediaType is Network",
+        "pil-%s %r type must have valid ImagePath",
+        "pil-%s %r type must have PartiGuid or PartiLabel"
+      ]
+    }
+  },
+  "runtime_log": {
+    "required_ascii": [
+      "Boot Device   : UFS",
+      "PROD Mode     : TRUE",
+      "Retail        : TRUE"
+    ]
+  },
+  "semantic_invariants": {
+    "flashless_ram_path": "ProcessFvLoadingForFlashless(RAM_PARTITION_ABL_MEMORY) can mount a preloaded ABL FV from RAM, but only on flashless boot",
+    "ufs_abl_path": "with UFS boot and no LoadAutoImageInPILFlag property, LoadAndProcessImages uses PIL ProcessPilImage(ABL_IMAGE); ABL_CFG is fixed ELF_FV raw-partition configuration",
+    "pil_buffer_auth": "PIL AuthELFFVImageFromBuffer is an authenticated ELF-FV path and reaches TZ PIL authentication/reset; it is not a no-auth arbitrary PE launcher",
+    "guided_fv_launch": "LaunchAppFromGuidedFv resolves an application inside a mounted guided FV and then uses UEFI LoadImage/StartImage",
+    "fastboot_timing": "fastboot implementation is inside already-running LinuxLoader; its download buffer is post-LinuxLoader",
+    "fastboot_boot_semantics": "stock fastboot boot consumes an Android boot image, calls LoadImageAndAuth, then BootLinux; it is not UEFI PE chainload",
+    "kernel_uefi_pair": "the lone 'uefi' string is the value in FastbootPublishVar('kernel','uefi'), not a hidden EFI boot command",
+    "toolsfv_ram_region": "FV_Region exists as a 4 MiB reserved memory carveout, but its ToolsFV mount path is reached only by debug/non-retail BDS flow in the matched source; no stock external producer for this region is identified on current Retail/UFS boot"
+  },
+  "expected": {
+    "R4-A": "PASS-ENUMERATED",
+    "R4-B": "INTERNAL-ONLY",
+    "R4-C": "NONE-FOUND",
+    "R4-D": "CLOSED",
+    "stock_nonflashing_carrier": false,
+    "next": "no live EFI test; separate design/research decision required"
+  }
+}

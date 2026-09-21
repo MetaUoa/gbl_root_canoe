@@ -1,0 +1,181 @@
+# PJZ110 / SM8750 adaptation roadmap
+
+Target: **OnePlus 13 China (PJZ110), SM8750/Pakala, ColorOS PJZ110_16.0.10.501(CN01)**.
+
+## Milestones
+
+- [x] M0 — Freeze current firmware baseline hashes
+- [x] M1 — Extract and identify the profiled ARM64 `LinuxLoader.efi`
+- [x] M2 — Add fail-closed offline analyzer
+- [x] M3 — Implement guarded `androidboot.vbmeta.device_state -> locked` software-visible patch
+- [x] M4 — Implement guarded verified-state table `orange -> green` patch
+- [x] M5 — Add binary-change allowlist and JSON patch manifest
+- [x] M6 — Add unit tests and dedicated GitHub Actions checks
+- [x] M7 — Block PJZ110 device-side `abl` / `efisp` writes and legacy ABL downgrade
+- [x] M8 — Close OPlus unlock-warning path: VerifiedBoot security predicate identified; no safe UI-only patch proven
+- [x] M9 — Resolve legacy deployment mismatch: PJZ110 has no EFISP; stock Retail routes must be analyzed independently
+- [x] M10 — Compare early ARB1 PJZ110 16.0.3.501 against 16.0.10.501
+- [x] M11 — Add exact-profile/read-only capture and true ABL-output validation tooling
+- [ ] M12 — DEFERRED-NO-CARRIER: true-device validation requires a separately reviewed reversible execution carrier
+- [ ] M13 — DEFERRED-NO-CARRIER: true-device ABL fake-lock validation cannot start
+- [x] M14 — OTA/profile lifecycle and three-generation regression matrix
+- [x] M15 — Analyze ColorOS 15 launch-era PJZ110 15.0.0.702
+- [x] M16 — Analyze current imagefv/toolsfv/uefi and identify stock BDS -> ToolsFV -> Shell candidate
+- [x] M17 — Reverse exact Retail QcomBds entry paths; generic Shell route demoted, Vol- removable-media route confirmed
+- [x] M18 — Close exact Retail Security2/DxeCore policy RE; removable EFI path reaches LoadImage with zero registered Security2 verify handlers
+- [x] M19 — Build deterministic read-only AArch64 BOOTAA64.EFI probe for future non-flashing validation
+- [x] M20 — Resolve dual hotkey-read timing; held Vol- re-detects after RESET_AFTER_READ
+- [x] M21 — Analyze Pakala USB stack; drivers are present but current Retail DFP auto-start is gated off
+- [x] M22 — Finalize observable read-only probe with deterministic 5-second banner hold
+- [x] M23 — Close P0-P4: USB Host auto-start CLOSED, DFP->XHCI BLOCKED, late removable R3 CLOSED, LinuxLoader PASS-IN-PRINCIPLE
+- [x] M24 — Close R4-A→R4-D: no stock non-flashing pre-LinuxLoader EFI carrier identified; R4-D CLOSED
+- [x] M25 — Complete deployment design review for exact stock build: NO-GO, no surviving carrier
+- [x] M25-A — Close direct patched-ABL path: exact PT_LOAD is SHA384-covered and its v7 hash table is OPLUS ECDSA-P384 signed; stock route CLOSED-BY-PIL-AUTH
+- [x] M25-B — Close exact stock post-auth/pre-LinuxLoader substitution and already-authenticated carrier paths: no external producer/caller identified
+- [x] M25-C — Define fail-closed A/B recovery contract template; unapplied because no candidate survives
+
+## Current validation boundary
+
+Three real PJZ110 boot-chain baselines have been analyzed:
+
+- `PJZ110_15.0.0.702(CN01)`
+- `PJZ110_16.0.3.501(CN01)`
+- `PJZ110_16.0.10.501(CN01)`
+
+All three support the guarded offline software-visible fake-lock patch and all
+three lack the legacy `efisp` marker. The real partition map also has no
+`efisp` partition.
+
+For the exact current build, P0-P4 and R4-A→R4-D are now closed offline:
+
+~~~text
+P0 exact baseline             PASS
+P1 USB Host auto-start        CLOSED
+P2 normal DFP -> XHCI         BLOCKED
+P3 late Vol- removable R3     CLOSED
+P4 LinuxLoader load context   PASS-IN-PRINCIPLE
+
+R4-A stock RAM/FV/EFI search  PASS-ENUMERATED
+R4-B pre-LinuxLoader carriers INTERNAL-ONLY
+R4-C external pre-LL source   NONE-FOUND
+R4-D stock non-flash carrier  CLOSED
+
+M25-A direct patched ABL       CLOSED-BY-PIL-AUTH
+ABL primary PT_LOAD SHA384     VERIFIED
+v7 hash-table OEM signature    VERIFIED
+~~~
+
+R4 found genuine internal staging machinery, including the UFS PIL ABL
+`ELF_FV` flow, the authenticated PIL buffer API, the flashless preloaded ABL
+RAM-partition flow, and a 4 MiB `FV_Region` used by debug ToolsFV loading.
+None provides a proven external, temporary, pre-LinuxLoader EFI carrier on the
+current Retail/UFS configuration.
+
+Fastboot download memory is externally controllable, but it exists inside the
+already-running LinuxLoader and the stock `boot` command consumes an Android
+boot image through `LoadImageAndAuth -> BootLinux`; it is not a pre-LinuxLoader
+UEFI PE chainloader.
+
+Therefore no live EFI execution test is currently justified. The read-only
+`BOOTAA64.EFI` probe remains available only if a separately reviewed carrier is
+found later.
+
+M25-A has now closed the straightforward direct-ABL candidate. The exact current
+LinuxLoader sits inside ABL's SHA384-covered PT_LOAD; the digest is present in the
+ELF-v7 hash table, and the hash-table region verifies against the embedded OPLUS
+P-384 leaf certificate. Repacking the 7-byte fake-lock payload therefore changes
+signed metadata. XBL_CONFIG Unlock=1 is a post-authentication PIL/XPU unlock, not
+an Android bootloader-unlock bypass.
+
+M25-B is closed for the exact current stock Retail/UFS build. The captured
+baseline is reproducible, and the identified candidates are
+`CLOSED-NO-STOCK-EXTERNAL-PRODUCER`. This conclusion is scoped to known stock
+paths and does not claim that unknown vulnerabilities cannot exist.
+
+M25-C now has a fail-closed A/B rollback contract template, but it cannot be
+completed or applied without a surviving deployment candidate. No live
+execution is authorized unless new evidence identifies both an external
+producer and a reversible carrier.
+
+M14 is complete with a read-only OTA/profile gate:
+`tools/pjz110_ota_profile_check.py` validates exact ABL profile selection,
+optional XBL/XBL_CONFIG hashes, LinuxLoader extraction, semantic patch
+postconditions, and the expected seven-byte output delta. The current
+`.501` package reproduces `PASS`; unknown and ambiguous profiles are refused.
+`tools/pjz110_profile_matrix.py` covers all three supported OTA generations
+and enforces unique artifact hashes plus the shared seven-byte contract.
+
+M8 first-pass `.501` research is now recorded in
+`docs/PJZ110_M8_UNLOCK_WARNING_RE.md`: the warning reference is unique, but
+the legacy global-state/CBZ suppression target is absent and the seven-byte
+fake-lock patch does not overlap the warning control region. No warning patch
+is authorized. The older exact LinuxLoader artifacts reproduce the same warning
+boundary across all three supported generations, and the source resolves to
+`QCOM_VERIFIEDBOOT_PROTOCOL.VBIsDeviceSecure`. M8 is closed as
+`CLOSED-NO-SAFE-UI-ONLY-PATCH`.
+
+See:
+
+- `docs/PJZ110_R4_STAGED_MEMORY_EFI_RE.md`
+- `profiles/PJZ110_16.0.10.501_r4.json`
+- `tools/pjz110_r4_check.py`
+- `docs/PJZ110_RETAIL_QCOMBDS_RE.md`
+- `docs/PJZ110_M25A_ABL_PIL_AUTH_RE.md`
+- `profiles/PJZ110_16.0.10.501_m25a.json`
+- `tools/pjz110_m25a_check.py`
+- `docs/PJZ110_M25B_POST_AUTH_BOUNDARY_RE.md`
+- `profiles/PJZ110_16.0.10.501_m25b.json`
+- `tools/pjz110_m25b_check.py`
+- `docs/PJZ110_M25C_AB_ROLLBACK_CONTRACT.md`
+- `docs/PJZ110_M25_DEPLOYMENT_NO_GO.md`
+
+## Safety contract
+
+Until M9–M12 pass:
+
+- no PJZ110 `abl` downgrade;
+- no PJZ110 `efisp` write;
+- no automatic flashing;
+- no modification of Qualcomm `DeviceInfo.is_unlocked`;
+- no modification of KeyMaster/TEE RootOfTrust state;
+- unknown firmware may be analyzed but must never be patched.
+
+## Known profiled output
+
+For the exact profiled `LinuxLoader.efi`:
+
+- source SHA256: `4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b`
+- patched SHA256: `34dbedd47b33acf4c131b5db927a5ef7cf9be214facbe6f98fe044dc448b61f0`
+- changed byte count: **7**
+
+## Canonical implementation
+
+The canonical offline implementation is now:
+
+```text
+tools/pjz110_fake_lock.py
+submodules/patcher/src/patchs/core.c
+```
+
+The three older per-build Python patchers are retained only as regression/reference implementations.
+
+Offline ABL fake-lock logic is complete for the three known exact profiles. The current deployment blocker is no longer the fake-lock transformation itself; it is finding a temporary/non-flashing stock PJZ110 EFI execution path for the generated patched LinuxLoader.
+
+Read-only deployment helpers:
+
+```text
+tools/pjz110_collect_bootchain.ps1
+tools/pjz110_fv_analyze.py
+tools/pjz110_capture_validation.ps1
+```
+
+Final acceptance is defined in `docs/PJZ110_ABL_FAKE_LOCK_VALIDATION.md`.
+
+
+## True-device execution plan
+
+The staged live-device procedure is documented in `docs/PJZ110_TRUE_DEVICE_VALIDATION_PLAN.md`.
+
+The earlier BDS/ToolsFV Shell and removable-media live stages are superseded. R4 also closed the analyzed stock staged/memory candidates. Do not resume live EFI execution until a separately reviewed deployment design identifies a proven reversible carrier. The read-only BOOTAA64.EFI probe remains available for that future carrier.
+
+Retail QcomBds reverse-engineering report: `docs/PJZ110_RETAIL_QCOMBDS_RE.md`.

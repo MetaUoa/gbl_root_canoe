@@ -1,0 +1,149 @@
+{
+  "id": "pjz110-16.0.10.501-p0-p4",
+  "device": "OnePlus 13",
+  "model": "PJZ110",
+  "platform": "SM8750",
+  "soc_codename": "Pakala",
+  "build": "PJZ110_16.0.10.501(CN01)",
+  "analysis_revision": "p0-p4-offline-closure-v1",
+  "artifacts": {
+    "abl": {"size": 278528, "sha256": "c6aa137b7e2b8c6f86040438022488eee6b2a69a1fad95f109a86c8a77d64bed"},
+    "uefi": {"size": 5242880, "sha256": "8d2670cb7790552c035bfa95896d561e7defb2414c8a6d538a3fdca2690879cc"},
+    "toolsfv": {"size": 1048576, "sha256": "c5da520b05b736875170248d2c80e5060edfb435c1e394acfb5489c5fef12eb7"},
+    "xbl_config": {"size": 360448, "sha256": "9760062003776a481495286d6c0233bda307100ac2e95cb7b23fcb5aa17bf64d"}
+  },
+  "xbl_config": {
+    "dtb_offset": "0x8708",
+    "required_by_path": {
+      "/sw/uefi/int_param": {
+        "EnableShell": 1,
+        "SecurityFlag": 196,
+        "DetectRetailUserAttentionHotkey": 0,
+        "DetectRetailUserAttentionHotkeyCode": 23,
+        "EnableUefiSecAppDebugLogDump": 0,
+        "AllowNonPersistentVarsInRetail": 1,
+        "EnableDisplayImageFv": 0,
+        "EnableVariablePolicyEngine": 0,
+        "USBHS1_Config": 0,
+        "UsbFnIoRevNum": 65537
+      },
+      "/sw/uefi/str_param": {
+        "DefaultBDSBootApp": "LinuxLoader",
+        "PlatConfigFileName": "uefiplatLA.cfg",
+        "OsTypeString": "LA",
+        "DefaultChargerApp": "QcomChargerApp"
+      },
+      "/soc/usb0/usb_overwrite_cfg": {
+        "status": "disabled",
+        "usb_mode": 3
+      }
+    },
+    "forbidden_anywhere_under": {
+      "/sw/uefi": ["OEMSetupApp"]
+    }
+  },
+  "exact_modules": {
+    "QcomBds": {"sha256": "426004d0eba512a0c33baf9f79e1c6ad723691e03a117f540dca79905dce1038", "size": 106496},
+    "DxeCore": {"sha256": "c50728527212502367bfc39d5b7f0f7ccdb0db217edbb7b87505841a33d4e19f", "size": 192512},
+    "SecurityStubDxe": {"sha256": "2e029953a561cb00133b67c415829567b67defb5dcaf99cef2519589927a3b7e", "size": 53248},
+    "VerifiedBootDxe": {"sha256": "cb379fda2dc10c01d123c7e0a0640504580ac4bc4bd3405ba35dc641c61fe02f", "size": 61440},
+    "OplusSecurityDxe": {"sha256": "9778820165fdb2a0e2c542dcb2cbd758e648b2dcb83f2b8430376c223b6c8020", "size": 45056},
+    "UsbConfigDxe": {"sha256": "83a9d176f3fbcf7c0040f78d571ada8baf14c3cb3696c116b46a47d961f38c44", "size": 90112},
+    "XhciPciEmulation": {"sha256": "5213d4d29ef7f7f0c379a6cfbcc804fc7b296956c55f956e78f1df9d6fa834de", "size": 40960},
+    "XhciDxe": {"sha256": "da00e9e3794b3de47e2831d075138ea609ca2098851f854988bdbfccb35298de", "size": 90112},
+    "UsbBusDxe": {"sha256": "d876be8611f9172cd9180524b28d3fe282def26f17d2ea808d3a196946d3e4e7", "size": 81920},
+    "UsbMassStorageDxe": {"sha256": "01c9dbabbd55eefcc7c3a3c784adc8b9c7e2c5ad5603b645e38d562eec3c43a6", "size": 49152},
+    "ButtonsDxe": {"sha256": "931120fa700f135b70123f18833850e60856b2dba3772d89e9e9b74c2f3ef850", "size": 40960},
+    "UsbPwrCtrlDxe": {"sha256": "4812dae5ab9420102d2a04dedac5ff31a57e9edd6e9fc2f0808d36570badff6a", "size": 53248},
+    "UsbInitDxe": {"sha256": "711ddb5f7da65c4b59c4b4fcf58416c0c07aa42191bf18a625d262603fcafbaf", "size": 28672},
+    "UsbMsdDxe": {"sha256": "38a9ec1bdd4314bfd9a75eb361f5bd0dde340973219795723348c6997f41ddc5", "size": 57344},
+    "UsbKbDxe": {"sha256": "b53cf66d601563ceabc775ea4d9f34245f11d6aadf0f7f4e68eda8b137b2f98e", "size": 49152}
+  },
+  "p1_usb_host_gate": {
+    "usb_config_module": "UsbConfigDxe",
+    "usb_start_controller_rva": "0x4470",
+    "init_usb_controller_on_boot_rva": "0xe456",
+    "init_usb_controller_on_boot_expected": 0,
+    "dfp_gate_instructions": {
+      "0x4a18": "0xd0000048",
+      "0x4a1c": "0x39515908",
+      "0x4a20": "0x34000268",
+      "0x4a58": "0x2a1f03e0",
+      "0x4a5c": "0x2a1503e1",
+      "0x4a60": "0x97fffe84"
+    },
+    "expected_bl_callsites_to_usb_start_controller": ["0x1618", "0x1d34", "0x431c", "0x4a60", "0x4f90", "0x504c"],
+    "qcombds_forbidden_guids": {
+      "gQcomUsbConfigProtocolGuid": "3fb022e750b2ce428ebd5bd51812d037",
+      "gInitUsbControllerGuid": "ceff0c1c8dfc444e8c789c9e5b530d36",
+      "gEfiEventToggleUsbModeGuid": "f54c1718ba6f9840bb6e36f0d06a044c"
+    },
+    "expected_status": "CLOSED"
+  },
+  "p2_dfp_xhci": {
+    "xhci_pci_module": "XhciPciEmulation",
+    "qcom_usb_config_guid": "3fb022e750b2ce428ebd5bd51812d037",
+    "intended_chain": [
+      "Type-C DFP attach",
+      "HandlePortPartnerXtach",
+      "InitUsbControllerOnBoot gate",
+      "UsbStartController(core0, USB_HOST_MODE_XHCI)",
+      "HostHandle + gQcomUsbConfigProtocolGuid",
+      "XhciPciEmulation",
+      "XhciDxe",
+      "UsbBusDxe",
+      "UsbMassStorageDxe"
+    ],
+    "expected_status": "BLOCKED"
+  },
+  "p3_bds_order": {
+    "qcombds_module": "QcomBds",
+    "default_bds_boot_app": "LinuxLoader",
+    "late_hotkey_rva": "0xd0c0",
+    "late_hotkey_call_site_rva": "0x1e80",
+    "default_app_launch_precedes_late_hotkey": true,
+    "normal_linuxloader_expected_to_not_return": true,
+    "expected_status": "CLOSED"
+  },
+  "p4_linuxloader": {
+    "sha256": "4d4aaa42e86917e65c2b2c3fdd477851282a31d5c64f9ca9d20710a650da8b4b",
+    "size": 798720,
+    "machine": 43620,
+    "subsystem": 10,
+    "entry_rva": 4096,
+    "imports_rva": 0,
+    "imports_size": 0,
+    "forbidden_guids": {
+      "EFI_LOADED_IMAGE_PROTOCOL_GUID": "a1311b5b6295d2118e3f00a0c969723b",
+      "EFI_LOADED_IMAGE_DEVICE_PATH_PROTOCOL_GUID": "7e1562bc333eec4f99202d3b36d750df",
+      "gEfiAblFvNameGuid": "99ae6f042ecfed49a6a8a1488b7e80d3"
+    },
+    "forbidden_strings": ["LoadOptions", "LoadedImage", "FilePath", "\\EFI\\", "gEfiAblFvNameGuid"],
+    "expected_status": "PASS-IN-PRINCIPLE"
+  },
+  "security_findings": {
+    "registered_security2_handlers": 0,
+    "post_end_of_dxe_defer_passes": true,
+    "security_flag": 196,
+    "sec_boot_enable_bit_set": false
+  },
+  "probe": {
+    "sha256": "17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931",
+    "size": 2048,
+    "machine": 43620,
+    "subsystem": 10,
+    "entry_rva": 4096,
+    "requires_reloc": true,
+    "behavior": {
+      "output_lines": [
+        "PJZ110 EFI PROBE: EXECUTION OK",
+        "READ-ONLY PROBE: no block/variable writes performed",
+        "Holding for 5 seconds, then returning to firmware boot manager."
+      ],
+      "stall_microseconds": 5000000,
+      "writes_device_storage": false,
+      "writes_uefi_variables": false,
+      "resets_device": false
+    }
+  }
+}

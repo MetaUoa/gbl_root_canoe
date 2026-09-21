@@ -1,0 +1,151 @@
+name: PJZ110 SM8750 checks
+
+on:
+  push:
+    branches: [pjz110-sm8750]
+  pull_request:
+    paths:
+      - 'tools/pjz110_patch.py'
+      - 'tools/pjz110_1603501_patch.py'
+      - 'tools/pjz110_1500702_patch.py'
+      - 'tools/pjz110_fake_lock.py'
+      - 'tools/pjz110_collect_bootchain.ps1'
+      - 'tools/pjz110_capture_validation.ps1'
+      - 'tools/pjz110_fv_analyze.py'
+      - 'tools/pjz110_probe/**'
+      - 'docs/PJZ110_RETAIL_REMOVABLE_VALIDATION_PLAN.md'
+      - 'docs/PJZ110_RETAIL_QCOMBDS_RE.md'
+      - 'tests/test_pjz110_retail_path_check.py'
+      - 'profiles/PJZ110_16.0.10.501_retail_path.json'
+      - 'tools/pjz110_retail_path_check.py'
+      - 'docs/PJZ110_R4_STAGED_MEMORY_EFI_RE.md'
+      - 'profiles/PJZ110_16.0.10.501_r4.json'
+      - 'tests/test_pjz110_r4_check.py'
+      - 'tools/pjz110_r4_check.py'
+      - 'docs/PJZ110_M25A_ABL_PIL_AUTH_RE.md'
+      - 'profiles/PJZ110_16.0.10.501_m25a.json'
+      - 'tests/test_pjz110_m25a_check.py'
+      - 'tools/pjz110_m25a_check.py'
+      - 'profiles/PJZ110_16.0.10.501_m25b.json'
+      - 'tests/test_pjz110_m25b_check.py'
+      - 'tools/pjz110_m25b_check.py'
+      - 'tools/pjz110_extract_exact_modules.py'
+      - 'tools/pjz110_ota_profile_check.py'
+      - 'tests/test_pjz110_ota_profile_check.py'
+      - 'docs/PJZ110_OTA_PROFILE_LIFECYCLE.md'
+      - 'tools/pjz110_profile_matrix.py'
+      - 'tests/test_pjz110_profile_matrix.py'
+      - 'tools/pjz110_warning_research.py'
+      - 'tests/test_pjz110_warning_research.py'
+      - 'docs/PJZ110_M8_UNLOCK_WARNING_RE.md'
+      - 'profiles/PJZ110_16.0.10.501_m8.json'
+      - 'tools/pjz110_m8_warning_check.py'
+      - 'tests/test_pjz110_m8_warning_check.py'
+      - 'profiles/PJZ110_M8_WARNING_MATRIX.json'
+      - 'tests/test_pjz110_m8_warning_matrix.py'
+      - 'docs/PJZ110_M25B_POST_AUTH_BOUNDARY_RE.md'
+      - 'docs/PJZ110_M25C_AB_ROLLBACK_CONTRACT.md'
+      - 'docs/PJZ110_M25_DEPLOYMENT_NO_GO.md'
+      - 'docs/PJZ110_ROADMAP.md'
+      - 'README_PJZ110.md'
+      - 'profiles/PJZ110_16.0.10.501.json'
+      - 'profiles/PJZ110_16.0.3.501.json'
+      - 'profiles/PJZ110_15.0.0.702.json'
+      - 'tests/test_pjz110_patch.py'
+      - 'tests/test_pjz110_1603501_patch.py'
+      - 'tests/test_pjz110_1500702_patch.py'
+      - 'tests/test_pjz110_fake_lock.py'
+      - 'tests/test_pjz110_fv_analyze.py'
+      - 'docs/PJZ110_SM8750.md'
+      - '.github/workflows/pjz110-sm8750.yml'
+      - 'targets/magisk_module/module/customize.sh'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit tests
+        run: |
+          python -m unittest discover -s tests -p 'test_pjz110_patch.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_1603501_patch.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_1500702_patch.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_fake_lock.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_fv_analyze.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_retail_path_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_r4_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_m25a_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_m25b_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_extract_exact_modules.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_ota_profile_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_profile_matrix.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_warning_research.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_m8_warning_check.py' -v
+          python -m unittest discover -s tests -p 'test_pjz110_m8_warning_matrix.py' -v
+      - name: Python syntax check
+        run: |
+          python -m py_compile tools/pjz110_patch.py
+          python -m py_compile tools/pjz110_1603501_patch.py
+          python -m py_compile tools/pjz110_1500702_patch.py
+          python -m py_compile tools/pjz110_fake_lock.py
+          python -m py_compile tools/pjz110_fv_analyze.py
+          python -m py_compile tools/pjz110_retail_path_check.py
+          python -m py_compile tools/pjz110_r4_check.py
+          python -m py_compile tools/pjz110_m25a_check.py
+          python -m py_compile tools/pjz110_m25b_check.py
+          python -m py_compile tools/pjz110_extract_exact_modules.py
+          python -m py_compile tools/pjz110_ota_profile_check.py
+          python -m py_compile tools/pjz110_profile_matrix.py
+          python -m py_compile tools/pjz110_warning_research.py
+          python -m py_compile tools/pjz110_m8_warning_check.py
+      - name: Install LLVM linker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lld
+      - name: Build read-only AArch64 EFI probe
+        run: |
+          mkdir -p /tmp/pjz110-probe
+          clang --target=aarch64-pc-windows-msvc -ffreestanding -fshort-wchar -fno-stack-protector -fno-builtin -O1 \
+            -c tools/pjz110_probe/pjz110_probe.c -o /tmp/pjz110-probe/probe.obj
+          if command -v lld-link >/dev/null 2>&1; then
+            lld-link /subsystem:efi_application /entry:efi_main /nodefaultlib /machine:arm64 \
+              /base:0x100000 /timestamp:0 /out:/tmp/pjz110-probe/BOOTAA64.EFI /tmp/pjz110-probe/probe.obj
+          else
+            ld.lld -flavor link /subsystem:efi_application /entry:efi_main /nodefaultlib /machine:arm64 \
+              /base:0x100000 /timestamp:0 /out:/tmp/pjz110-probe/BOOTAA64.EFI /tmp/pjz110-probe/probe.obj
+          fi
+          python - <<'PY'
+          from pathlib import Path
+          import struct
+          b=Path('/tmp/pjz110-probe/BOOTAA64.EFI').read_bytes()
+          assert b[:2] == b'MZ'
+          pe=struct.unpack_from('<I',b,0x3c)[0]
+          assert b[pe:pe+4] == b'PE\0\0'
+          assert struct.unpack_from('<H',b,pe+4)[0] == 0xAA64
+          opt=pe+24
+          assert struct.unpack_from('<H',b,opt+0x44)[0] == 10
+          rr,rs=struct.unpack_from('<II',b,opt+0x70+5*8)
+          assert rr != 0 and rs != 0
+          import hashlib
+          expected='17305dd5136bafed35b39ec0b883c66f2f9d7ef78bffafb37fc88b9efb393931'
+          actual=hashlib.sha256(b).hexdigest()
+          assert len(b) == 2048, len(b)
+          assert actual == expected, (actual, expected)
+          print('probe PE validation: PASS')
+          print('reference probe SHA256:', actual)
+          import base64
+          ref=Path('tools/pjz110_probe/BOOTAA64.EFI.b64').read_text().strip()
+          decoded=base64.b64decode(ref, validate=True)
+          assert decoded == b
+          assert 'Holding for 5 seconds, then returning to firmware boot manager.'.encode('utf-16le') in b
+          print('reference probe base64 validation: PASS')
+          PY
+      - name: Installer shell syntax check
+        run: bash -n targets/magisk_module/module/customize.sh
+      - name: PJZ110 fail-closed guard check
+        run: |
+          grep -q 'PJZ110 fail-closed research profile: device flashing disabled' targets/magisk_module/module/customize.sh
+          grep -q 'efisp/abl writes and ABL downgrade are disabled' targets/magisk_module/module/customize.sh
